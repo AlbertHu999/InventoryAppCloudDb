@@ -1,4 +1,4 @@
-﻿namespace InventoryAppLocalDb
+﻿namespace InventoryAppLocalDb_EF
 {
     partial class Form1
     {

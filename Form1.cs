@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Windows.Forms;
 
-namespace InventoryAppLocalDb;
+namespace InventoryAppLocalDb_EF;
 
     public partial class Form1 : Form
     {
