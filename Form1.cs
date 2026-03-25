@@ -1,4 +1,6 @@
 #nullable disable
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
 using System.Windows.Forms;
 
@@ -10,15 +12,29 @@ namespace InventoryAppLocalDb_EF;
         private BindingList<Product> _products = new BindingList<Product>();
         private BindingSource _bindingSource = new BindingSource();
 
-        public Form1()
-        {
-            InitializeComponent();
-            string connStr = "Host=localhost;Port=5432;Database=inventory_db;Username=postgres;Password=lemelserver";
-            _repo = new DapperProductRepository(connStr);
-            InitializeForm();
-        }
+    public Form1()
+    {
+        InitializeComponent();
 
-        private void InitializeForm()
+        // 從 appsettings.json 讀取連線字串
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        string connStr = config.GetConnectionString("Default")!;
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(connStr)
+            .Options;
+
+        var context = new AppDbContext(options);
+        _repo = new EFProductRepository(context);
+
+        InitializeForm();
+    }
+
+    private void InitializeForm()
         {
             cboCategory.Items.AddRange(new[] { "飲料", "零食", "3C", "文具", "其他" });
             cboCategory.SelectedIndex = 0;
