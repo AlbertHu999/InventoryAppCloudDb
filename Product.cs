@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace InventoryAppLocalDb_EF;
+namespace InventoryAppCloudDb;
 
 [Table("products")]
 public class Product

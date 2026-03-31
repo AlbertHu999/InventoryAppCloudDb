@@ -1,4 +1,4 @@
-namespace InventoryAppLocalDb_EF;
+namespace InventoryAppCloudDb;
 
 internal static class Program
 {

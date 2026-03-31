@@ -1,4 +1,4 @@
-﻿namespace InventoryAppLocalDb_EF;
+﻿namespace InventoryAppCloudDb;
 
 partial class ProductDetailForm
 {

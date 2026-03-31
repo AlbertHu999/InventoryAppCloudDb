@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace InventoryAppLocalDb_EF
+namespace InventoryAppCloudDb
 {
     public class AppDbContextFactory
         : IDesignTimeDbContextFactory<AppDbContext>

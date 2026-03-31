@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
 using System.Windows.Forms;
 
-namespace InventoryAppLocalDb_EF;
+namespace InventoryAppCloudDb;
 
 public partial class Form1 : Form
 {

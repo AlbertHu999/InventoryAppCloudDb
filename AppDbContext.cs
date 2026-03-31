@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace InventoryAppLocalDb_EF
+namespace InventoryAppCloudDb
 {
     public class AppDbContext : DbContext
     {

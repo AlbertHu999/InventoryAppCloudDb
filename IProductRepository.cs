@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace InventoryAppLocalDb_EF;
+namespace InventoryAppCloudDb;
 
 // IProductRepository.cs（介面，之前定義好的）
 public interface IProductRepository

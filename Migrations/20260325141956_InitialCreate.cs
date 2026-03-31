@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace InventoryAppLocalDb_EF.Migrations
+namespace InventoryAppCloudDb.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

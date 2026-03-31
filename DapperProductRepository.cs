@@ -4,7 +4,7 @@ using System.Text;
 using Dapper;
 using Npgsql;   
 
-namespace InventoryAppLocalDb_EF;
+namespace InventoryAppCloudDb;
 
 // DapperProductRepository.cs（Dapper 實作）
 public class DapperProductRepository : IProductRepository
