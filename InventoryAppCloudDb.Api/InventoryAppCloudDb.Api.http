@@ -1,0 +1,35 @@
+@baseUrl = https://localhost:7165
+
+### 查詢所有商品
+GET {{baseUrl}}/api/products
+
+### 查詢單一商品
+GET {{baseUrl}}/api/products/1
+
+### 依分類查詢
+GET {{baseUrl}}/api/products/category/飲料
+
+### 新增商品
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "name": "橡皮擦",
+  "price": 15,
+  "stock": 100,
+  "category": "文具"
+}
+
+### 修改商品（把 id=1 的商品改名改價）
+PUT {{baseUrl}}/api/products/1
+Content-Type: application/json
+
+{
+  "name": "abc飲品-改名",
+  "price": 120,
+  "stock": 25,
+  "category": "飲料"
+}
+
+### 刪除商品
+DELETE {{baseUrl}}/api/products/6

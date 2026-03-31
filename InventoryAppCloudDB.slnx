@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="InventoryAppCloudDb.Api/InventoryAppCloudDb.Api.csproj" Id="ada88d85-46d5-4491-9cc4-45f7090a64d9" />
   <Project Path="InventoryAppCloudDb.csproj" />
 </Solution>

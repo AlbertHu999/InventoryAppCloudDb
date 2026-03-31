@@ -7,7 +7,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-
+	
+	<ItemGroup>
+		<Compile Remove="InventoryAppCloudDb.Api\**" />
+		<Content Remove="InventoryAppCloudDb.Api\**" />
+		<None Remove="InventoryAppCloudDb.Api\**" />
+		<EmbeddedResource Remove="InventoryAppCloudDb.Api\**" />
+	</ItemGroup>
+	
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
