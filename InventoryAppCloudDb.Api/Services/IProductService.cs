@@ -4,10 +4,10 @@ namespace InventoryAppCloudDb.Api.Services;
 
 public interface IProductService
 {
-    List<ProductDto> GetAll();
-    ProductDto? GetById(int id);
-    List<ProductDto> GetByCategory(string category);
-    ProductDto? Create(CreateProductDto dto);
-    bool Update(int id, UpdateProductDto dto);
-    bool Delete(int id);
+    Task<List<ProductDto>> GetAllAsync();
+    Task<ProductDto?> GetByIdAsync(int id);
+    Task<List<ProductDto>> GetByCategoryAsync(string category);
+    Task<ProductDto?> CreateAsync(CreateProductDto dto);
+    Task<bool> UpdateAsync(int id, UpdateProductDto dto);
+    Task<bool> DeleteAsync(int id);
 }

@@ -1,65 +1,60 @@
 ﻿using InventoryAppCloudDb.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventoryAppCloudDb.Api.Repositories;
 
 public class EFProductRepository : IProductRepository
 {
-    private readonly AppDbContext _context;
+    private readonly AppDbContext _ctx;
 
-    public EFProductRepository(AppDbContext context)
+    // DbContext 由 DI 注入，不自己 new
+    public EFProductRepository(AppDbContext ctx)
     {
-        _context = context;
+        _ctx = ctx;
     }
 
-    public List<Product> GetAll()
-    {
-        return _context.Products
-            .OrderBy(p => p.Id)
-            .ToList();
-    }
+    public async Task<List<Product>> GetAllAsync()
+        => await _ctx.Products.OrderBy(p => p.Id).ToListAsync();
 
-    public Product? GetById(int id)
-    {
-        return _context.Products
-            .FirstOrDefault(p => p.Id == id);
-    }
+    public async Task<Product?> GetByIdAsync(int id)
+        => await _ctx.Products.FindAsync(id);
 
-    public List<Product> GetByCategory(string category)
+    public async Task<List<Product>> GetByCategoryAsync(string category)
     {
-        return _context.Products
+        return await _ctx.Products
             .Where(p => p.Category == category)
             .OrderBy(p => p.Id)
-            .ToList();
+            .ToListAsync();
     }
 
-    public int Insert(Product p)
+    public async Task<int> InsertAsync(Product product)
     {
-        _context.Products.Add(p);
-        _context.SaveChanges();
-        return p.Id;
+        _ctx.Products.Add(product);
+        await _ctx.SaveChangesAsync();
+        return product.Id;  // SaveChanges 後 EF 自動填回 Id
     }
 
-    public bool Update(Product p)
+    public async Task<bool> UpdateAsync(Product product)
     {
-        var existing = _context.Products.Find(p.Id);
+        var existing = await _ctx.Products.FindAsync(product.Id);
         if (existing == null) return false;
 
-        existing.Name = p.Name;
-        existing.Price = p.Price;
-        existing.Stock = p.Stock;
-        existing.Category = p.Category;
+        existing.Name = product.Name;
+        existing.Price = product.Price;
+        existing.Stock = product.Stock;
+        existing.Category = product.Category;
 
-        _context.SaveChanges();
+        await _ctx.SaveChangesAsync();
         return true;
     }
 
-    public bool Delete(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
-        var p = _context.Products.Find(id);
-        if (p == null) return false;
+        var target = await _ctx.Products.FindAsync(id);
+        if (target == null) return false;
 
-        _context.Products.Remove(p);
-        _context.SaveChanges();
+        _ctx.Products.Remove(target);
+        await _ctx.SaveChangesAsync();
         return true;
     }
 }

@@ -10,32 +10,29 @@ public class ProductService : IProductService
 
     public ProductService(IProductRepository repo)
     {
-        _repo = repo;  // DI 注入 Repository
+        _repo = repo;
     }
 
-    public List<ProductDto> GetAll()
+    public async Task<List<ProductDto>> GetAllAsync()
     {
-        return _repo.GetAll()
-            .Select(p => ToDto(p))
-            .ToList();
+        var products = await _repo.GetAllAsync();
+        return products.Select(p => ToDto(p)).ToList();
     }
 
-    public ProductDto? GetById(int id)
+    public async Task<ProductDto?> GetByIdAsync(int id)
     {
-        var product = _repo.GetById(id);
+        var product = await _repo.GetByIdAsync(id);
         return product == null ? null : ToDto(product);
     }
 
-    public List<ProductDto> GetByCategory(string category)
+    public async Task<List<ProductDto>> GetByCategoryAsync(string category)
     {
-        return _repo.GetByCategory(category)
-            .Select(p => ToDto(p))
-            .ToList();
+        var products = await _repo.GetByCategoryAsync(category);
+        return products.Select(p => ToDto(p)).ToList();
     }
 
-    public ProductDto? Create(CreateProductDto dto)
+    public async Task<ProductDto?> CreateAsync(CreateProductDto dto)
     {
-        // ★ 商業邏輯驗證（這些判斷只能放在 Service，不能放在 Repository）
         if (string.IsNullOrWhiteSpace(dto.Name))
             return null;
 
@@ -45,7 +42,6 @@ public class ProductService : IProductService
         if (dto.Stock < 0)
             return null;
 
-        // 轉換 DTO → Entity
         var product = new Product
         {
             Name = dto.Name.Trim(),
@@ -55,15 +51,12 @@ public class ProductService : IProductService
             CreatedAt = DateTime.UtcNow
         };
 
-        int newId = _repo.Insert(product);
-
-        // 回傳新建的完整資料
-        return GetById(newId);
+        int newId = await _repo.InsertAsync(product);
+        return await GetByIdAsync(newId);
     }
 
-    public bool Update(int id, UpdateProductDto dto)
+    public async Task<bool> UpdateAsync(int id, UpdateProductDto dto)
     {
-        // ★ 商業邏輯驗證
         if (string.IsNullOrWhiteSpace(dto.Name))
             return false;
 
@@ -82,15 +75,14 @@ public class ProductService : IProductService
             Category = string.IsNullOrWhiteSpace(dto.Category) ? "未分類" : dto.Category.Trim()
         };
 
-        return _repo.Update(product);
+        return await _repo.UpdateAsync(product);
     }
 
-    public bool Delete(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
-        return _repo.Delete(id);
+        return await _repo.DeleteAsync(id);
     }
 
-    // ★ 私有方法：Entity → DTO 轉換（集中在一處，方便維護）
     private static ProductDto ToDto(Product p)
     {
         return new ProductDto
