@@ -33,3 +33,25 @@ Content-Type: application/json
 
 ### 刪除商品
 DELETE {{baseUrl}}/api/products/6
+
+### 測試驗證：價格為負數（應該失敗）
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "name": "測試商品",
+  "price": -50,
+  "stock": 10,
+  "category": "測試"
+}
+
+### 測試驗證：名稱為空（應該失敗）
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": 100,
+  "stock": 10,
+  "category": "測試"
+}

@@ -1,0 +1,6 @@
+﻿namespace InventoryAppCloudDb.Api.Models
+{
+    public class Class
+    {
+    }
+}

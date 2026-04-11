@@ -3,95 +3,118 @@ using InventoryAppCloudDb.Api.Models;
 using InventoryAppCloudDb.Api.Repositories;
 
 namespace InventoryAppCloudDb.Api.Services;
-
+// Services/ProductService.cs
 public class ProductService : IProductService
 {
     private readonly IProductRepository _repo;
 
+    // Repository 由 DI 注入
     public ProductService(IProductRepository repo)
     {
         _repo = repo;
     }
 
-    public async Task<List<ProductDto>> GetAllAsync()
+    // ── 查詢全部 ──────────────────────────────────────
+    public async Task<ServiceResult<List<ProductDto>>> GetAllAsync()
     {
         var products = await _repo.GetAllAsync();
-        return products.Select(p => ToDto(p)).ToList();
+
+        // Entity → DTO 轉換（不直接把 Entity 往外丟）
+        var dtos = products.Select(p => ToDto(p)).ToList();
+
+        return ServiceResult<List<ProductDto>>.Ok(dtos);
     }
 
-    public async Task<ProductDto?> GetByIdAsync(int id)
+    // ── 查詢單筆 ──────────────────────────────────────
+    public async Task<ServiceResult<ProductDto>> GetByIdAsync(int id)
     {
         var product = await _repo.GetByIdAsync(id);
-        return product == null ? null : ToDto(product);
-    }
 
-    public async Task<List<ProductDto>> GetByCategoryAsync(string category)
+        if (product == null)
+            return ServiceResult<ProductDto>.Fail($"找不到 Id={id} 的商品");
+
+        return ServiceResult<ProductDto>.Ok(ToDto(product));
+    }
+    // ── 依分類查詢 ──────────────────────────────────────
+    public async Task<ServiceResult<List<ProductDto>>> GetByCategoryAsync(string category)
     {
         var products = await _repo.GetByCategoryAsync(category);
-        return products.Select(p => ToDto(p)).ToList();
+        var dtos = products.Select(p => ToDto(p)).ToList();
+        return ServiceResult<List<ProductDto>>.Ok(dtos);
     }
 
-    public async Task<ProductDto?> CreateAsync(CreateProductDto dto)
+
+    // ── 新增 ──────────────────────────────────────────
+    public async Task<ServiceResult<ProductDto>> CreateAsync(CreateProductDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            return null;
-
+        // ✅ 商業規則驗證（這裡才是正確的位置）
         if (dto.Price < 0)
-            return null;
+            return ServiceResult<ProductDto>.Fail("售價不能為負數");
 
-        if (dto.Stock < 0)
-            return null;
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            return ServiceResult<ProductDto>.Fail("商品名稱不能空白");
 
+        // DTO → Entity 轉換
         var product = new Product
         {
             Name = dto.Name.Trim(),
             Price = dto.Price,
             Stock = dto.Stock,
-            Category = string.IsNullOrWhiteSpace(dto.Category) ? "未分類" : dto.Category.Trim(),
-            CreatedAt = DateTime.UtcNow
+            Category = dto.Category.Trim(),
+            CreatedAt = DateTime.UtcNow,
         };
 
-        int newId = await _repo.InsertAsync(product);
-        return await GetByIdAsync(newId);
+        var newId = await _repo.InsertAsync(product);
+        product.Id = newId;
+
+        return ServiceResult<ProductDto>.Ok(ToDto(product));
     }
 
-    public async Task<bool> UpdateAsync(int id, UpdateProductDto dto)
+    // ── 修改 ──────────────────────────────────────────
+    public async Task<ServiceResult<ProductDto>> UpdateAsync(int id, UpdateProductDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            return false;
+        // 先確認資料存在
+        var existing = await _repo.GetByIdAsync(id);
+        if (existing == null)
+            return ServiceResult<ProductDto>.Fail($"找不到 Id={id} 的商品");
 
+        // 商業規則驗證
         if (dto.Price < 0)
-            return false;
+            return ServiceResult<ProductDto>.Fail("售價不能為負數");
 
-        if (dto.Stock < 0)
-            return false;
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            return ServiceResult<ProductDto>.Fail("商品名稱不能空白");
 
-        var product = new Product
-        {
-            Id = id,
-            Name = dto.Name.Trim(),
-            Price = dto.Price,
-            Stock = dto.Stock,
-            Category = string.IsNullOrWhiteSpace(dto.Category) ? "未分類" : dto.Category.Trim()
-        };
+        // 更新 Entity
+        existing.Name = dto.Name.Trim();
+        existing.Price = dto.Price;
+        existing.Stock = dto.Stock;
+        existing.Category = dto.Category.Trim();
 
-        return await _repo.UpdateAsync(product);
+        await _repo.UpdateAsync(existing);
+
+        return ServiceResult<ProductDto>.Ok(ToDto(existing));
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    // ── 刪除 ──────────────────────────────────────────
+    public async Task<ServiceResult> DeleteAsync(int id)
     {
-        return await _repo.DeleteAsync(id);
+        var existing = await _repo.GetByIdAsync(id);
+        if (existing == null)
+            return ServiceResult.Fail($"找不到 Id={id} 的商品");
+
+        await _repo.DeleteAsync(id);
+        return ServiceResult.Ok();
     }
 
-    private static ProductDto ToDto(Product p)
+    // ── 私有轉換方法：Entity → DTO ────────────────────
+    // 集中在這一個地方，之後欄位有變動只改這裡
+    private static ProductDto ToDto(Product p) => new()
     {
-        return new ProductDto
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Price = p.Price,
-            Stock = p.Stock,
-            Category = p.Category
-        };
-    }
+        Id = p.Id,
+        Name = p.Name,
+        Price = p.Price,
+        Stock = p.Stock,
+        Category = p.Category,
+    };
 }

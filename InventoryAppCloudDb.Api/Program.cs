@@ -29,51 +29,50 @@ app.UseHttpsRedirection();
 // GET /api/products — 取得所有商品
 app.MapGet("/api/products", async (IProductService svc) =>
 {
-    var products = await svc.GetAllAsync();
-    return Results.Ok(products);
+    var result = await svc.GetAllAsync();
+    return Results.Ok(result.Data);
 });
 
 // GET /api/products/3 — 依 ID 取得單一商品
 app.MapGet("/api/products/{id:int}", async (int id, IProductService svc) =>
 {
-    var product = await svc.GetByIdAsync(id);
-    return product is not null
-        ? Results.Ok(product)
-        : Results.NotFound(new { message = $"找不到 Id={id} 的商品" });
+    var result = await svc.GetByIdAsync(id);
+    return result.Success
+        ? Results.Ok(result.Data)
+        : Results.NotFound(new { message = result.Message });
 });
 
 // GET /api/products/category/飲料 — 依分類取得商品
 app.MapGet("/api/products/category/{category}", async (string category, IProductService svc) =>
 {
-    var products = await svc.GetByCategoryAsync(category);
-    return Results.Ok(products);
+    var result = await svc.GetByCategoryAsync(category);
+    return Results.Ok(result.Data);
 });
 
 // POST /api/products — 新增商品
 app.MapPost("/api/products", async (CreateProductDto dto, IProductService svc) =>
 {
-    var created = await svc.CreateAsync(dto);
-    return created is not null
-        ? Results.Created($"/api/products/{created.Id}", created)
-        : Results.BadRequest(new { message = "新增失敗，請檢查輸入資料" });
+    var result = await svc.CreateAsync(dto);
+    return result.Success
+        ? Results.Created($"/api/products/{result.Data!.Id}", result.Data)
+        : Results.BadRequest(new { message = result.Message });
 });
 
 // PUT /api/products/3 — 修改商品
 app.MapPut("/api/products/{id:int}", async (int id, UpdateProductDto dto, IProductService svc) =>
 {
-    var success = await svc.UpdateAsync(id, dto);
-    return success
-        ? Results.Ok(new { message = "修改成功" })
-        : Results.NotFound(new { message = $"找不到 Id={id} 的商品，或資料無效" });
+    var result = await svc.UpdateAsync(id, dto);
+    return result.Success
+        ? Results.Ok(result.Data)
+        : Results.NotFound(new { message = result.Message });
 });
 
 // DELETE /api/products/3 — 刪除商品
 app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc) =>
 {
-    var success = await svc.DeleteAsync(id);
-    return success
+    var result = await svc.DeleteAsync(id);
+    return result.Success
         ? Results.Ok(new { message = "刪除成功" })
-        : Results.NotFound(new { message = $"找不到 Id={id} 的商品" });
-});
-app.Run();
+        : Results.NotFound(new { message = result.Message });
+}); app.Run();
      
