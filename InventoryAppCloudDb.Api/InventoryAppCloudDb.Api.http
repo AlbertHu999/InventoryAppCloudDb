@@ -1,4 +1,5 @@
-@baseUrl = https://localhost:7165
+# @baseUrl = https://localhost:7165
+@baseUrl = https://inventory-api-194340759475.asia-east1.run.app
 
 ### 查詢所有商品
 GET {{baseUrl}}/api/products
@@ -55,3 +56,35 @@ Content-Type: application/json
   "stock": 10,
   "category": "測試"
 }
+### 新增測試資料到 Cloud SQL
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "name": "雲端測試商品",
+  "price": 99.50,
+  "stock": 10,
+  "category": "測試"
+}
+
+### ===== Token 驗證測試 =====
+
+### 1. 登入取得 Token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin1234"
+}
+
+### 2. 不帶 Token 查詢（應該 401）
+GET {{baseUrl}}/api/products
+
+### 3. 帶 Token 查詢（把下面的 Token 換成步驟1拿到的）
+GET {{baseUrl}}/api/products
+Authorization: Bearer f80242be63924386b86d465eba93e407
+
+### 4. 帶錯誤 Token（應該 401）
+GET {{baseUrl}}/api/products
+Authorization: Bearer abc123

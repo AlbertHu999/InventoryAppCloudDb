@@ -1,8 +1,10 @@
 using InventoryAppCloudDb.Api.DTOs;
+using InventoryAppCloudDb.Api.Middleware;
 using InventoryAppCloudDb.Api.Models;
 using InventoryAppCloudDb.Api.Repositories;
 using InventoryAppCloudDb.Api.Services;
 using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IProductRepository, EFProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddOpenApi();
 
@@ -24,6 +27,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<TokenAuthMiddleware>();
 
 // ── 全域例外處理 ──────────────────────────────────────
 app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
@@ -101,6 +105,16 @@ app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc) =>
         : Results.NotFound(result);
 })
 .WithTags("商品管理");
+
+// ── 驗證 API ─────────────────────────────────────────
+app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc) =>
+{
+    var result = await svc.LoginAsync(dto.Username, dto.Password);
+    return result.Success
+        ? Results.Ok(result)
+        : Results.Unauthorized();
+})
+.WithTags("驗證");
 
 app.Run();
      
