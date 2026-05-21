@@ -1,16 +1,19 @@
+using InventoryAppCloudDb.Services;
+
 namespace InventoryAppCloudDb;
 
 internal static class Program
 {
-    /// <summary>
-    ///  The main entry point for the application.
-    /// </summary>
     [STAThread]
     static void Main()
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
+
+        // 建立 ApiService 單一實例，之後所有 Form 共用
+        var apiService = new ApiService();
+
+        // 先開登入畫面
+        //Application.Run(new LoginForm(apiService));
         Application.Run(new Form1());
     }
 }

@@ -1,4 +1,6 @@
 #nullable disable
+using InventoryAppCloudDb.Models;
+using InventoryAppCloudDb.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
@@ -8,7 +10,7 @@ namespace InventoryAppCloudDb;
 
 public partial class Form1 : Form
 {
-    private readonly IProductRepository _repo;
+    //private readonly IProductRepository _repo;
     private BindingList<Product> _products = new BindingList<Product>();
     private BindingSource _bindingSource = new BindingSource();
 
@@ -17,19 +19,19 @@ public partial class Form1 : Form
         InitializeComponent();
 
         // 從 appsettings.json 讀取連線字串
-        var config = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json")
-            .Build();
+        //var config = new ConfigurationBuilder()
+        //    .SetBasePath(AppContext.BaseDirectory)
+        //    .AddJsonFile("appsettings.json")
+        //    .Build();
 
-        string connStr = config.GetConnectionString("Default")!;
+        //string connStr = config.GetConnectionString("Default")!;
 
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connStr)
-            .Options;
+        //var options = new DbContextOptionsBuilder<AppDbContext>()
+        //    .UseNpgsql(connStr)
+        //    .Options;
 
-        var context = new AppDbContext(options);
-        _repo = new EFProductRepository(context);
+        //var context = new AppDbContext(options);
+        //_repo = new EFProductRepository(context);
 
         InitializeForm();
     }
@@ -43,7 +45,7 @@ public partial class Form1 : Form
         _bindingSource.DataSource = _products;
         dgvProducts.DataSource = _bindingSource;
 
-        LoadProducts();  // ← 改成從資料庫載入
+        //LoadProducts();  // ← 改成從資料庫載入
 
         btnAdd.Click += btnAdd_Click;
         btnClear.Click += btnClear_Click;
@@ -235,7 +237,29 @@ public partial class Form1 : Form
             : $"搜尋「{keyword}」找到 {filtered.Count} 筆";
     }
 
-    private void Form1_Load(object sender, EventArgs e) { }
+    // 暫時在 Form1 的 Load 事件測試
+    private async void Form1_Load(object sender, EventArgs e)
+    {
+        var api = new ApiService();
+
+        // 測試登入
+        var (success, token, msg) = await api.LoginAsync("admin", "admin1234");
+        if (success)
+        {
+            AppSession.Token = token;
+            AppSession.Username = "admin";
+            AppSession.Role = "Admin";
+            MessageBox.Show($"登入成功！Token: {token[..8]}...");
+
+            // 測試查詢
+            var products = await api.GetProductsAsync();
+            MessageBox.Show($"查詢成功！共 {products.Count} 筆商品");
+        }
+        else
+        {
+            MessageBox.Show($"登入失敗：{msg}");
+        }
+    }
 
     private void btnStats_Click(object sender, EventArgs e)
     {
