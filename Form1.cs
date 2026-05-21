@@ -10,7 +10,7 @@ namespace InventoryAppCloudDb;
 
 public partial class Form1 : Form
 {
-    //private readonly IProductRepository _repo;
+    private readonly IProductRepository _repo;
     private BindingList<Product> _products = new BindingList<Product>();
     private BindingSource _bindingSource = new BindingSource();
 
