@@ -1,6 +1,7 @@
 ﻿
 namespace InventoryAppCloudDb.Api.Services;
 
+using InventoryAppCloudDb.Api.DTOs;
 using InventoryAppCloudDb.Api.Models;
 using Microsoft.EntityFrameworkCore;
 // Services/AuthService.cs
@@ -13,23 +14,13 @@ public class AuthService : IAuthService
         _ctx = ctx;
     }
 
-    public async Task<ServiceResult<string>> LoginAsync(string username, string password)
+    public async Task<ServiceResult<LoginResponseDto>> LoginAsync(string username, string password)
     {
-        // 找使用者
-        var user = await _ctx.Users
-            .FirstOrDefaultAsync(u => u.Username == username);
+        var user = await _ctx.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            return ServiceResult<LoginResponseDto>.Fail("帳號或密碼錯誤");
 
-        if (user == null)
-            return ServiceResult<string>.Fail("帳號或密碼錯誤");
-
-        // 驗證密碼（BCrypt）
-        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            return ServiceResult<string>.Fail("帳號或密碼錯誤");
-
-        // 產生 Token（GUID，唯一且難以猜測）
         var token = Guid.NewGuid().ToString("N");
-
-        // 存入資料庫，設定 8 小時後過期
         _ctx.UserTokens.Add(new UserToken
         {
             UserId = user.Id,
@@ -38,9 +29,13 @@ public class AuthService : IAuthService
         });
         await _ctx.SaveChangesAsync();
 
-        return ServiceResult<string>.Ok(token);
+        return ServiceResult<LoginResponseDto>.Ok(new LoginResponseDto
+        {
+            Token = token,
+            Username = user.Username,
+            Role = user.Role,
+        });
     }
-
     public async Task<(bool IsValid, string Role)> ValidateTokenAsync(string token)
     {
         var userToken = await _ctx.UserTokens

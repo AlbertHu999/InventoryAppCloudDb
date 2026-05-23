@@ -14,10 +14,10 @@ public partial class Form1 : Form
     private BindingList<Product> _products = new BindingList<Product>();
     private BindingSource _bindingSource = new BindingSource();
 
-    public Form1()
+    public Form1(ApiService api)
     {
         InitializeComponent();
-
+        // _api = api;  ← Day 33-35 再用
         // 從 appsettings.json 讀取連線字串
         //var config = new ConfigurationBuilder()
         //    .SetBasePath(AppContext.BaseDirectory)
@@ -243,8 +243,7 @@ public partial class Form1 : Form
         var api = new ApiService();
 
         // 測試登入
-        var (success, token, msg) = await api.LoginAsync("admin", "admin1234");
-        if (success)
+        var (success, token, username, role, msg) = await api.LoginAsync("admin", "admin1234"); if (success)
         {
             AppSession.Token = token;
             AppSession.Username = "admin";

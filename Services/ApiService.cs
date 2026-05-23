@@ -37,19 +37,21 @@ public class ApiService
         => new(JsonSerializer.Serialize(obj), Encoding.UTF8, "application/json");
 
     // ── 登入 ────────────────────────────────────────
-    public async Task<(bool Success, string Token, string Message)> LoginAsync(
-        string username, string password)
+    public async Task<(bool Success, string Token, string Username, string Role, string Message)>
+    LoginAsync(string username, string password)
     {
         var dto = new LoginDto { Username = username, Password = password };
         var response = await _http.PostAsync($"{_baseUrl}/api/auth/login", ToJson(dto));
         var json = await response.Content.ReadAsStringAsync();
+        //MessageBox.Show(json);  // ← 加這行，看原始回傳內容
 
         if (!response.IsSuccessStatusCode)
-            return (false, "", "帳號或密碼錯誤");
+            return (false, "", "", "", "帳號或密碼錯誤");
 
-        // 解析回傳的 ServiceResult<string>
-        var result = JsonSerializer.Deserialize<ServiceResultJson<string>>(json, _jsonOpt);
-        return (true, result?.Data ?? "", "登入成功");
+        var result = JsonSerializer.Deserialize<ServiceResultJson<LoginResponseDto>>(json, _jsonOpt);
+        var data = result?.Data;
+
+        return (true, data?.Token ?? "", data?.Username ?? "", data?.Role ?? "", "登入成功");
     }
 
     // ── 查詢全部商品 ──────────────────────────────────

@@ -13,7 +13,7 @@ internal static class Program
         var apiService = new ApiService();
 
         // 先開登入畫面
-        //Application.Run(new LoginForm(apiService));
-        Application.Run(new Form1());
+        Application.Run(new LoginForm(apiService));
+        //Application.Run(new Form1());
     }
 }
