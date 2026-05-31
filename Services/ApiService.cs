@@ -32,6 +32,18 @@ public class ApiService
             new AuthenticationHeaderValue("Bearer", AppSession.Token);
     }
 
+    // ── 私有：統一處理 401 Token 過期 ───────────────────
+    private async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> request)
+    {
+        SetAuthHeader();
+        var response = await request();
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException("Token 已過期");
+
+        return response;
+    }
+    
     // ── 私有：把物件序列化成 JSON Body ──────────────
     private static StringContent ToJson(object obj)
         => new(JsonSerializer.Serialize(obj), Encoding.UTF8, "application/json");
@@ -57,10 +69,8 @@ public class ApiService
     // ── 查詢全部商品 ──────────────────────────────────
     public async Task<List<ProductDto>> GetProductsAsync()
     {
-        SetAuthHeader();
-        var response = await _http.GetAsync($"{_baseUrl}/api/products");
+        var response = await SendAsync(() => _http.GetAsync($"{_baseUrl}/api/products"));
         response.EnsureSuccessStatusCode();
-
         var json = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ServiceResultJson<List<ProductDto>>>(json, _jsonOpt);
         return result?.Data ?? [];

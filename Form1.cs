@@ -1,88 +1,62 @@
-#nullable disable
+using InventoryAppCloudDb.DTOs;
 using InventoryAppCloudDb.Models;
 using InventoryAppCloudDb.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
-using System.Windows.Forms;
 
 namespace InventoryAppCloudDb;
 
 public partial class Form1 : Form
 {
-    private readonly IProductRepository _repo;
-    private BindingList<Product> _products = new BindingList<Product>();
-    private BindingSource _bindingSource = new BindingSource();
+    private readonly ApiService _api;
+    private readonly BindingList<ProductDto> _products = new();
+    private readonly BindingSource _bindingSource = new();
 
     public Form1(ApiService api)
     {
         InitializeComponent();
-        // _api = api;  ← Day 33-35 再用
-        // 從 appsettings.json 讀取連線字串
-        //var config = new ConfigurationBuilder()
-        //    .SetBasePath(AppContext.BaseDirectory)
-        //    .AddJsonFile("appsettings.json")
-        //    .Build();
-
-        //string connStr = config.GetConnectionString("Default")!;
-
-        //var options = new DbContextOptionsBuilder<AppDbContext>()
-        //    .UseNpgsql(connStr)
-        //    .Options;
-
-        //var context = new AppDbContext(options);
-        //_repo = new EFProductRepository(context);
-
+        _api = api;
         InitializeForm();
+        _ = LoadProductsAsync();   // 非同步載入，不阻塞 UI
     }
 
+    // ── 初始化 ────────────────────────────────────────
     private void InitializeForm()
     {
-        cboCategory.Items.AddRange(new[] { "飲料", "零食", "3C", "文具", "其他" });
-        cboCategory.SelectedIndex = 0;
-        SetupDataGridView();
+        // 顯示登入者資訊
+        lblUser.Text = $"登入者：{AppSession.Username}（{AppSession.Role}）";
 
+        // Admin 才能刪除
+        btnDelete.Enabled = AppSession.IsAdmin;
+
+        // 設定 DataGridView
         _bindingSource.DataSource = _products;
         dgvProducts.DataSource = _bindingSource;
-
-        //LoadProducts();  // ← 改成從資料庫載入
-
-        btnAdd.Click += btnAdd_Click;
-        btnClear.Click += btnClear_Click;
-        btnEdit.Click += btnEdit_Click;
-        btnDelete.Click += btnDelete_Click;
-        dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
-        txtSearch.TextChanged += txtSearch_TextChanged;
-        btnStats.Click += btnStats_Click;
-    }
-
-    private void SetupDataGridView()
-    {
         dgvProducts.AutoGenerateColumns = false;
         dgvProducts.Columns.Clear();
+
         dgvProducts.Columns.Add(new DataGridViewTextBoxColumn
         {
             Name = "colId",
             HeaderText = "編號",
             DataPropertyName = "Id",
-            Width = 50
+            Width = 55
         });
         dgvProducts.Columns.Add(new DataGridViewTextBoxColumn
         {
             Name = "colName",
             HeaderText = "商品名稱",
             DataPropertyName = "Name",
-            Width = 150
+            Width = 160
         });
         dgvProducts.Columns.Add(new DataGridViewTextBoxColumn
         {
             Name = "colPrice",
             HeaderText = "售價",
             DataPropertyName = "Price",
-            Width = 80,
+            Width = 90,
             DefaultCellStyle = new DataGridViewCellStyle
             {
-                Format = "C0",
+                Format = "N2",
                 Alignment = DataGridViewContentAlignment.MiddleRight
             }
         });
@@ -91,7 +65,7 @@ public partial class Form1 : Form
             Name = "colStock",
             HeaderText = "庫存",
             DataPropertyName = "Stock",
-            Width = 60,
+            Width = 70,
             DefaultCellStyle = new DataGridViewCellStyle
             {
                 Alignment = DataGridViewContentAlignment.MiddleRight
@@ -102,101 +76,213 @@ public partial class Form1 : Form
             Name = "colCategory",
             HeaderText = "分類",
             DataPropertyName = "Category",
-            Width = 70
+            Width = 80
         });
+
         dgvProducts.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         dgvProducts.ReadOnly = true;
         dgvProducts.AllowUserToAddRows = false;
+
+        // 事件訂閱
+        btnAdd.Click += btnAdd_Click;
+        btnUpdate.Click += btnUpdate_Click;
+        btnDelete.Click += btnDelete_Click;
+        btnLogout.Click += btnLogout_Click;
+        dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
+        btnClear.Click += (s, e) => ClearInputs();
+        txtSearch.TextChanged += txtSearch_TextChanged;
     }
 
-    // ↓ 原本的 LoadSampleData() 改成這個
-    private void LoadProducts()
+    // ── 載入商品清單 ──────────────────────────────────
+    private async Task LoadProductsAsync()
     {
-        _products.Clear();
-        foreach (var p in _repo.GetAll())
-            _products.Add(p);
-        UpdateStatus();
+        try
+        {
+            SetLoading(true);
+            var list = await _api.GetProductsAsync();
+
+            _products.Clear();
+            foreach (var p in list)
+                _products.Add(p);
+
+            lblStatus.Text = $"共 {_products.Count} 筆商品";
+        }
+        catch (HttpRequestException)
+        {
+            MessageBox.Show("無法連線到伺服器，請確認網路", "連線錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            RedirectToLogin();
+        }
+        finally
+        {
+            SetLoading(false);
+        }
     }
 
-    private void UpdateStatus()
+    // ── 新增 ──────────────────────────────────────────
+    private async void btnAdd_Click(object? sender, EventArgs e)
     {
-        lblStatus.Text = $"共 {_products.Count} 筆商品";
-    }
+        if (!ValidateInputs(out var dto)) return;
 
-    private void btnAdd_Click(object sender, EventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(txtName.Text))
+        var createDto = new CreateProductDto
         {
-            MessageBox.Show("請輸入商品名稱！", "驗證錯誤",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            txtName.Focus();
-            return;
-        }
-        if (!double.TryParse(txtPrice.Text, out double price) || price < 0)
-        {
-            MessageBox.Show("售價請輸入有效的正數！", "驗證錯誤",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            txtPrice.Focus();
-            return;
-        }
-        if (!int.TryParse(txtStock.Text, out int stock) || stock < 0)
-        {
-            MessageBox.Show("庫存請輸入有效的正整數！", "驗證錯誤",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            txtStock.Focus();
-            return;
-        }
-
-        var p = new Product
-        {
-            Name = txtName.Text.Trim(),
-            Price = price,
-            Stock = stock,
-            Category = cboCategory.SelectedItem?.ToString() ?? "其他"
+            Name = dto.Name,
+            Price = dto.Price,
+            Stock = dto.Stock,
+            Category = dto.Category
         };
 
-        _repo.Insert(p);      // ← 存進資料庫
-        LoadProducts();       // ← 重新從資料庫撈，畫面更新
-        ClearInputs();
-        lblStatus.Text = $"✅ 已新增：{p.Name}";
-    }
+        SetLoading(true);
+        var (success, message) = await _api.CreateProductAsync(createDto);
+        SetLoading(false);
 
-    private void btnEdit_Click(object sender, EventArgs e)
-    {
-        if (_bindingSource.Current is not Product selected) return;
-
-        using var detailForm = new ProductDetailForm(selected);
-        if (detailForm.ShowDialog() == DialogResult.OK)
+        if (success)
         {
-            var edited = detailForm.EditedProduct;
-            edited.Id = selected.Id;  // ← 確保 id 帶過去
-
-            _repo.Update(edited);     // ← 更新資料庫
-            LoadProducts();           // ← 重新撈
-            lblStatus.Text = $"✅ 已編輯：{edited.Name}";
+            lblStatus.Text = $"✅ 已新增：{dto.Name}";
+            ClearInputs();
+            await LoadProductsAsync();
+        }
+        else
+        {
+            MessageBox.Show(message, "新增失敗",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
-    private void btnDelete_Click(object sender, EventArgs e)
+    // ── 修改 ──────────────────────────────────────────
+    private async void btnUpdate_Click(object? sender, EventArgs e)
     {
-        if (_bindingSource.Current is not Product selected) return;
+        if (_bindingSource.Current is not ProductDto selected)
+        {
+            MessageBox.Show("請先選取要修改的商品", "提示");
+            return;
+        }
+        if (!ValidateInputs(out var dto)) return;
+
+        SetLoading(true);
+        var (success, message) = await _api.UpdateProductAsync(selected.Id, dto);
+        SetLoading(false);
+
+        if (success)
+        {
+            lblStatus.Text = $"✅ 已修改：{dto.Name}";
+            ClearInputs();
+            await LoadProductsAsync();
+        }
+        else
+        {
+            MessageBox.Show(message, "修改失敗",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    // ── 刪除 ──────────────────────────────────────────
+    private async void btnDelete_Click(object? sender, EventArgs e)
+    {
+        if (_bindingSource.Current is not ProductDto selected) return;
 
         var confirm = MessageBox.Show(
             $"確定要刪除「{selected.Name}」嗎？",
             "刪除確認",
             MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question
-        );
+            MessageBoxIcon.Question);
 
-        if (confirm == DialogResult.Yes)
+        if (confirm != DialogResult.Yes) return;
+
+        SetLoading(true);
+        var (success, message) = await _api.DeleteProductAsync(selected.Id);
+        SetLoading(false);
+
+        if (success)
         {
-            _repo.Delete(selected.Id);  // ← 從資料庫刪除
-            LoadProducts();             // ← 重新撈
             lblStatus.Text = $"🗑️ 已刪除：{selected.Name}";
+            await LoadProductsAsync();
+        }
+        else
+        {
+            MessageBox.Show(message, "刪除失敗",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
-    private void btnClear_Click(object sender, EventArgs e) => ClearInputs();
+    // ── 選取列時填回輸入欄位 ──────────────────────────
+    private void dgvProducts_SelectionChanged(object? sender, EventArgs e)
+    {
+        if (_bindingSource.Current is not ProductDto p) return;
+
+        txtName.Text = p.Name;
+        txtPrice.Text = p.Price.ToString();
+        txtStock.Text = p.Stock.ToString();
+        cboCategory.SelectedItem = p.Category;
+    }
+
+    // ── 即時搜尋 ──────────────────────────────────────
+    private async void txtSearch_TextChanged(object? sender, EventArgs e)
+    {
+        var keyword = txtSearch.Text.Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            await LoadProductsAsync();
+            return;
+        }
+
+        var filtered = _products
+            .Where(p => p.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                        p.Category.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        _products.Clear();
+        foreach (var p in filtered)
+            _products.Add(p);
+
+        lblStatus.Text = $"搜尋「{keyword}」找到 {filtered.Count} 筆";
+    }
+
+    // ── 登出 ──────────────────────────────────────────
+    private void btnLogout_Click(object? sender, EventArgs e)
+    {
+        AppSession.Clear();
+        var loginForm = new LoginForm(_api);
+        loginForm.Show();
+        this.Close();
+    }
+
+    // ── 輔助方法 ──────────────────────────────────────
+    private bool ValidateInputs(out UpdateProductDto dto)
+    {
+        dto = new UpdateProductDto();
+
+        if (string.IsNullOrWhiteSpace(txtName.Text))
+        {
+            MessageBox.Show("請輸入商品名稱", "驗證錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            txtName.Focus();
+            return false;
+        }
+        if (!decimal.TryParse(txtPrice.Text, out var price) || price < 0)
+        {
+            MessageBox.Show("售價請輸入有效的正數", "驗證錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            txtPrice.Focus();
+            return false;
+        }
+        if (!int.TryParse(txtStock.Text, out var stock) || stock < 0)
+        {
+            MessageBox.Show("庫存請輸入有效的正整數", "驗證錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            txtStock.Focus();
+            return false;
+        }
+
+        dto.Name = txtName.Text.Trim();
+        dto.Price = price;
+        dto.Stock = stock;
+        dto.Category = cboCategory.SelectedItem?.ToString() ?? "";
+        return true;
+    }
 
     private void ClearInputs()
     {
@@ -207,77 +293,21 @@ public partial class Form1 : Form
         txtName.Focus();
     }
 
-    private void dgvProducts_SelectionChanged(object sender, EventArgs e)
+    private void SetLoading(bool isLoading)
     {
-        if (_bindingSource.Current is Product p)
-        {
-            txtName.Text = p.Name;
-            txtPrice.Text = p.Price.ToString();
-            txtStock.Text = p.Stock.ToString();
-            cboCategory.SelectedItem = p.Category;
-        }
+        btnAdd.Enabled = !isLoading;
+        btnUpdate.Enabled = !isLoading;
+        btnDelete.Enabled = !isLoading && AppSession.IsAdmin;
+        Cursor = isLoading ? Cursors.WaitCursor : Cursors.Default;
     }
 
-    private void txtSearch_TextChanged(object sender, EventArgs e)
+    private void RedirectToLogin()
     {
-        string keyword = txtSearch.Text.Trim().ToLower();
-
-        var filtered = string.IsNullOrEmpty(keyword)
-            ? _products
-            : new BindingList<Product>(
-                _products.Where(p =>
-                    p.Name.ToLower().Contains(keyword) ||
-                    p.Category.ToLower().Contains(keyword)
-                ).ToList()
-              );
-
-        _bindingSource.DataSource = filtered;
-        lblStatus.Text = string.IsNullOrEmpty(keyword)
-            ? $"共 {_products.Count} 筆商品"
-            : $"搜尋「{keyword}」找到 {filtered.Count} 筆";
-    }
-
-    // 暫時在 Form1 的 Load 事件測試
-    private async void Form1_Load(object sender, EventArgs e)
-    {
-        var api = new ApiService();
-
-        // 測試登入
-        var (success, token, username, role, msg) = await api.LoginAsync("admin", "admin1234"); if (success)
-        {
-            AppSession.Token = token;
-            AppSession.Username = "admin";
-            AppSession.Role = "Admin";
-            MessageBox.Show($"登入成功！Token: {token[..8]}...");
-
-            // 測試查詢
-            var products = await api.GetProductsAsync();
-            MessageBox.Show($"查詢成功！共 {products.Count} 筆商品");
-        }
-        else
-        {
-            MessageBox.Show($"登入失敗：{msg}");
-        }
-    }
-
-    private void btnStats_Click(object sender, EventArgs e)
-    {
-        var all = _repo.GetAll();
-
-        int totalKinds = all.Count;
-        double totalValue = all.Sum(p => p.Price * p.Stock);
-        int lowStockCount = all.Count(p => p.Stock < 10);
-        var mostExpensive = all.OrderByDescending(p => p.Price).FirstOrDefault();
-
-        string msg = $"""
-        📊 商品統計
-        ─────────────────
-        商品總種數：{totalKinds} 種
-        庫存總值：NT$ {totalValue:N0}
-        低庫存商品（< 10件）：{lowStockCount} 種
-        最貴商品：{mostExpensive?.Name} NT${mostExpensive?.Price:N0}
-        """;
-
-        MessageBox.Show(msg, "統計面板", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show("登入已過期，請重新登入", "驗證失敗",
+            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        AppSession.Clear();
+        var loginForm = new LoginForm(_api);
+        loginForm.Show();
+        this.Close();
     }
 }
