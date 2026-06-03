@@ -44,6 +44,7 @@ public partial class LoginForm : Form
                 // 存入全域 Session
                 AppSession.Token = token;
                 AppSession.Username = txtUsername.Text.Trim();
+                AppSession.Role = role;
 
                 // 開啟主畫面，關閉登入畫面
                 var mainForm = new Form1(_api);

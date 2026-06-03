@@ -28,6 +28,10 @@ public partial class Form1 : Form
         // Admin 才能刪除
         btnDelete.Enabled = AppSession.IsAdmin;
 
+        //分類初始化
+        cboCategory.Items.AddRange(new[] { "飲料", "零食", "3C", "文具", "其他" });
+        cboCategory.SelectedIndex = 0;
+
         // 設定 DataGridView
         _bindingSource.DataSource = _products;
         dgvProducts.DataSource = _bindingSource;
@@ -88,8 +92,9 @@ public partial class Form1 : Form
         btnUpdate.Click += btnUpdate_Click;
         btnDelete.Click += btnDelete_Click;
         btnLogout.Click += btnLogout_Click;
-        dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
         btnClear.Click += (s, e) => ClearInputs();
+        btnStats.Click += btnStats_Click;
+        dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
         txtSearch.TextChanged += txtSearch_TextChanged;
     }
 
@@ -309,5 +314,31 @@ public partial class Form1 : Form
         var loginForm = new LoginForm(_api);
         loginForm.Show();
         this.Close();
+    }
+    private void btnStats_Click(object? sender, EventArgs e)
+    {
+        var all = _products.ToList();
+
+        if (!all.Any())
+        {
+            MessageBox.Show("目前沒有商品資料", "統計");
+            return;
+        }
+
+        int totalKinds = all.Count;
+        decimal totalValue = all.Sum(p => p.Price * p.Stock);
+        int lowStockCount = all.Count(p => p.Stock < 10);
+        var mostExpensive = all.OrderByDescending(p => p.Price).FirstOrDefault();
+
+        string msg = $"""
+        📊 商品統計
+        ─────────────────
+        商品總種數：{totalKinds} 種
+        庫存總值：NT$ {totalValue:N0}
+        低庫存商品（< 10件）：{lowStockCount} 種
+        最貴商品：{mostExpensive?.Name ?? "無"} NT${mostExpensive?.Price:N0}
+        """;
+
+        MessageBox.Show(msg, "商品統計", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }
