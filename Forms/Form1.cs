@@ -3,7 +3,7 @@ using InventoryAppCloudDb.Models;
 using InventoryAppCloudDb.Services;
 using System.ComponentModel;
 
-namespace InventoryAppCloudDb;
+namespace InventoryAppCloudDb.Forms;
 
 public partial class Form1 : Form
 {

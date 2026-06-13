@@ -1,5 +1,5 @@
-﻿namespace InventoryAppCloudDb
-{
+﻿namespace InventoryAppCloudDb.Forms;
+
     partial class Form1
     {
         /// <summary>
@@ -265,4 +265,4 @@
         private Label lblUser;
         private Button btnLogout;
     }
-}
+

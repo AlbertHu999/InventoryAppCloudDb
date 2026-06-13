@@ -1,7 +1,7 @@
 ﻿using InventoryAppCloudDb.Models;
 using InventoryAppCloudDb.Services;
 
-namespace InventoryAppCloudDb;
+namespace InventoryAppCloudDb.Forms;
 
 public partial class LoginForm : Form
 {

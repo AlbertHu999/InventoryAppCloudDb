@@ -1,5 +1,5 @@
-﻿namespace InventoryAppCloudDb
-{
+﻿namespace InventoryAppCloudDb.Forms;
+
     partial class LoginForm
     {
         /// <summary>
@@ -128,4 +128,3 @@
         private TextBox txtPassword;
         private Button btnLogin;
     }
-}
