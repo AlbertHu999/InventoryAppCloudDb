@@ -1,9 +1,10 @@
 ﻿// Services/ApiService.cs
+using InventoryAppCloudDb.DTOs;
+using InventoryAppCloudDb.Models;
+using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using InventoryAppCloudDb.DTOs;
-using InventoryAppCloudDb.Models;
 
 namespace InventoryAppCloudDb.Services;
 
@@ -21,8 +22,13 @@ public class ApiService
     public ApiService()
     {
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        _baseUrl = "https://inventory-api-194340759475.asia-east1.run.app";
-        // 之後可以從 appsettings.json 讀取，不要硬碼
+
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        _baseUrl = config["ApiSettings:BaseUrl"]!;
     }
 
     // ── 私有：自動加上 Token Header ─────────────────

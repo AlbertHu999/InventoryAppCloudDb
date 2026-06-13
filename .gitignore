@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 deploy.bat
+*.http
+appsettings.Production.json
+InventoryAppCloudDb.Api/appsettings.json
