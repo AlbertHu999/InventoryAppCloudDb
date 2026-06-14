@@ -1,6 +1,6 @@
 ﻿namespace InventoryAppCloudDb.Forms;
 
-    partial class Form1
+    partial class productForm
     {
         /// <summary>
         ///  Required designer variable.

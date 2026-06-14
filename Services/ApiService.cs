@@ -133,6 +133,57 @@ public class ApiService
             : (false, "刪除失敗");
     }
 
+    // ════════════════════════════════════════════════════════
+    //  進貨單 Purchase Orders
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>取得所有進貨單（含明細）</summary>
+    public async Task<List<PurchaseOrderDto>> GetPurchaseOrdersAsync()
+    {
+        var response = await SendAsync(() => _http.GetAsync($"{_baseUrl}/api/purchases"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<List<PurchaseOrderDto>>>(json, _jsonOpt);
+        return result?.Data ?? [];
+    }
+
+    /// <summary>建立進貨單（同時更新庫存）</summary>
+    public async Task<(bool Success, string Message)> CreatePurchaseOrderAsync(
+        CreatePurchaseOrderDto dto)
+    {
+        var response = await SendAsync(() => _http.PostAsync($"{_baseUrl}/api/purchases", ToJson(dto)));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<PurchaseOrderDto>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, result?.Message ?? "進貨單建立成功")
+            : (false, result?.Message ?? "進貨單建立失敗");
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  銷貨單 Sales Orders
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>取得所有銷貨單（含明細）</summary>
+    public async Task<List<SalesOrderDto>> GetSalesOrdersAsync()
+    {
+        var response = await SendAsync(() => _http.GetAsync($"{_baseUrl}/api/sales"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<List<SalesOrderDto>>>(json, _jsonOpt);
+        return result?.Data ?? [];
+    }
+
+    /// <summary>建立銷貨單（同時扣庫存）</summary>
+    public async Task<(bool Success, string Message)> CreateSalesOrderAsync(
+        CreateSalesOrderDto dto)
+    {
+        var response = await SendAsync(() => _http.PostAsync($"{_baseUrl}/api/sales", ToJson(dto)));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<SalesOrderDto>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, result?.Message ?? "銷貨單建立成功")
+            : (false, result?.Message ?? "銷貨單建立失敗");
+    }
     // ── 私有：對應 API 的 ServiceResult<T> JSON 結構 ─
     private class ServiceResultJson<T>
     {

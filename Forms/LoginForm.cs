@@ -47,7 +47,7 @@ public partial class LoginForm : Form
                 AppSession.Role = role;
 
                 // 開啟主畫面，關閉登入畫面
-                var mainForm = new Form1(_api);
+                var mainForm = new MainForm(_api);
                 mainForm.Show();
                 this.Hide();
 

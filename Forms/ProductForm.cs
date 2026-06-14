@@ -5,13 +5,13 @@ using System.ComponentModel;
 
 namespace InventoryAppCloudDb.Forms;
 
-public partial class Form1 : Form
+public partial class productForm : Form
 {
     private readonly ApiService _api;
     private readonly BindingList<ProductDto> _products = new();
     private readonly BindingSource _bindingSource = new();
 
-    public Form1(ApiService api)
+    public productForm(ApiService api)
     {
         InitializeComponent();
         _api = api;
@@ -91,7 +91,8 @@ public partial class Form1 : Form
         btnAdd.Click += btnAdd_Click;
         btnUpdate.Click += btnUpdate_Click;
         btnDelete.Click += btnDelete_Click;
-        btnLogout.Click += btnLogout_Click;
+        //btnLogout.Click += btnLogout_Click;
+        btnLogout.Visible = false;   // 登出改由主選單負責
         btnClear.Click += (s, e) => ClearInputs();
         btnStats.Click += btnStats_Click;
         dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
@@ -247,13 +248,13 @@ public partial class Form1 : Form
     }
 
     // ── 登出 ──────────────────────────────────────────
-    private void btnLogout_Click(object? sender, EventArgs e)
-    {
-        AppSession.Clear();
-        var loginForm = new LoginForm(_api);
-        loginForm.Show();
-        this.Close();
-    }
+    //private void btnLogout_Click(object? sender, EventArgs e)
+    //{
+    //    AppSession.Clear();
+    //    var loginForm = new LoginForm(_api);
+    //    loginForm.Show();
+    //    this.Close();
+    //}
 
     // ── 輔助方法 ──────────────────────────────────────
     private bool ValidateInputs(out UpdateProductDto dto)

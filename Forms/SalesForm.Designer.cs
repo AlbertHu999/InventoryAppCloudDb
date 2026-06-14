@@ -1,0 +1,120 @@
+﻿namespace InventoryAppCloudDb.Forms;
+
+partial class SalesForm
+{
+    private System.ComponentModel.IContainer components = null;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && (components != null)) components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private void InitializeComponent()
+    {
+        // ── 主表 DataGridView ──
+        dgvOrders = new DataGridView();
+        dgvOrders.Location = new Point(12, 50);
+        dgvOrders.Size = new Size(560, 480);
+        dgvOrders.ReadOnly = true;
+        dgvOrders.AllowUserToAddRows = false;
+        dgvOrders.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        dgvOrders.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        dgvOrders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Bottom;
+
+        // ── 右側：客戶 ──
+        lblCustomer = new Label { Text = "客戶：", Location = new Point(590, 50), AutoSize = true };
+        txtCustomer = new TextBox { Location = new Point(640, 47), Width = 220 };
+
+        // ── 右側：明細標題 ──
+        lblDetail = new Label { Text = "銷貨明細：", Location = new Point(590, 90), AutoSize = true };
+
+        // ── 商品下拉 ──
+        lblProduct = new Label { Text = "商品：", Location = new Point(590, 120), AutoSize = true };
+        cboProduct = new ComboBox
+        {
+            Location = new Point(640, 117),
+            Width = 160,
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+
+        // ── 數量 ──
+        lblQty = new Label { Text = "數量：", Location = new Point(590, 155), AutoSize = true };
+        txtQty = new TextBox { Location = new Point(640, 152), Width = 80 };
+
+        // ── 售價 ──
+        lblPrice = new Label { Text = "售價：", Location = new Point(590, 185), AutoSize = true };
+        txtPrice = new TextBox { Location = new Point(640, 182), Width = 80 };
+
+        // ── 加入明細按鈕 ──
+        btnAddDetail = new Button
+        {
+            Text = "+ 加入明細",
+            Location = new Point(730, 150),
+            Size = new Size(100, 55)
+        };
+
+        // ── 明細 DataGridView ──
+        dgvDetails = new DataGridView();
+        dgvDetails.Location = new Point(590, 220);
+        dgvDetails.Size = new Size(560, 220);
+        dgvDetails.AllowUserToAddRows = false;
+        dgvDetails.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        dgvDetails.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+
+        // ── 移除明細按鈕 ──
+        btnRemoveDetail = new Button
+        {
+            Text = "移除選取明細",
+            Location = new Point(590, 450),
+            Size = new Size(130, 30)
+        };
+
+        // ── 建立銷貨單按鈕 ──
+        btnCreate = new Button
+        {
+            Text = "建立銷貨單",
+            Location = new Point(1010, 450),
+            Size = new Size(140, 35),
+            BackColor = Color.SeaGreen,
+            ForeColor = Color.White,
+            Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold)
+        };
+
+        // ── 重新整理按鈕 ──
+        btnRefresh = new Button
+        {
+            Text = "重新整理",
+            Location = new Point(12, 15),
+            Size = new Size(100, 28)
+        };
+
+        // ── Form 設定 ──
+        components = new System.ComponentModel.Container();
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(1180, 560);
+        Text = "銷貨單管理";
+        Font = new Font("Microsoft JhengHei", 9f);
+
+        Controls.AddRange(new Control[]
+        {
+            dgvOrders, btnRefresh,
+            lblCustomer, txtCustomer,
+            lblDetail,
+            lblProduct, cboProduct,
+            lblQty, txtQty,
+            lblPrice, txtPrice,
+            btnAddDetail,
+            dgvDetails, btnRemoveDetail,
+            btnCreate
+        });
+    }
+
+    // ── 控制項宣告 ──
+    private DataGridView dgvOrders;
+    private DataGridView dgvDetails;
+    private Label lblCustomer, lblDetail, lblProduct, lblQty, lblPrice;
+    private TextBox txtCustomer, txtQty, txtPrice;
+    private ComboBox cboProduct;
+    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh;
+}
