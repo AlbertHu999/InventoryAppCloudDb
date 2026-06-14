@@ -4,12 +4,12 @@
 public class SalesOrderDto
 {
     public int Id { get; set; }
-    public string OrderNo { get; set; } = "";
     public string Customer { get; set; } = "";
+    public string Note { get; set; } = "";
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = "";
     public string CreatedBy { get; set; } = "";
-    public DateTime CreatedAt { get; set; }
+    public DateTime OrderDate { get; set; }
     public List<SalesOrderDetailDto> Details { get; set; } = new();
 }
 

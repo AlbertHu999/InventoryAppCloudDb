@@ -18,6 +18,27 @@ public partial class SalesForm : Form
     {
         InitializeComponent();
         dgvDetails.DataSource = _details;
+        dgvDetails.AutoGenerateColumns = false;
+        dgvDetails.Columns.Clear();
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "商品Id",
+            DataPropertyName = "ProductId",
+            Width = 70
+        });
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "數量",
+            DataPropertyName = "Quantity",
+            Width = 70
+        });
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "售價",
+            DataPropertyName = "UnitPrice",
+            Width = 80
+        });
+        
         Load += async (_, _) => await LoadDataAsync();
         btnRefresh.Click += async (_, _) => await LoadDataAsync();
         btnAddDetail.Click += BtnAddDetail_Click;
@@ -41,12 +62,10 @@ public partial class SalesForm : Form
             var display = orders.Select(o => new
             {
                 o.Id,
-                o.OrderNo,
-                o.Customer,
-                金額 = o.TotalAmount.ToString("N0"),
-                o.Status,
+                客戶 = o.Customer,
+                備註 = o.Note,
                 建立者 = o.CreatedBy,
-                建立時間 = o.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                建立時間 = o.OrderDate.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
             }).ToList();
 
             dgvOrders.DataSource = null;

@@ -4,12 +4,12 @@
 public class PurchaseOrderDto
 {
     public int Id { get; set; }
-    public string OrderNo { get; set; } = "";
     public string Supplier { get; set; } = "";
+    public string Note { get; set; } = "";
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = "";
     public string CreatedBy { get; set; } = "";
-    public DateTime CreatedAt { get; set; }
+    public DateTime OrderDate { get; set; }
     public List<PurchaseOrderDetailDto> Details { get; set; } = new();
 }
 
@@ -20,7 +20,7 @@ public class PurchaseOrderDetailDto
     public int ProductId { get; set; }
     public string ProductName { get; set; } = "";
     public int Quantity { get; set; }
-    public decimal UnitCost { get; set; }
+    public decimal UnitPrice { get; set; }// ← 對齊 API 的 unitPrice
     public decimal Subtotal { get; set; }
 }
 

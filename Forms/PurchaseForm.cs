@@ -18,6 +18,28 @@ public partial class PurchaseForm : Form
     {
         InitializeComponent();
         dgvDetails.DataSource = _details;
+        // 明細欄位中文標題
+        dgvDetails.AutoGenerateColumns = false;
+        dgvDetails.Columns.Clear();
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "商品Id",
+            DataPropertyName = "ProductId",
+            Width = 70
+        });
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "數量",
+            DataPropertyName = "Quantity",
+            Width = 70
+        });
+        dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            HeaderText = "單價",
+            DataPropertyName = "UnitCost",
+            Width = 80
+        });
+
         Load += async (_, _) => await LoadDataAsync();
         btnRefresh.Click += async (_, _) => await LoadDataAsync();
         btnAddDetail.Click += BtnAddDetail_Click;
@@ -41,12 +63,10 @@ public partial class PurchaseForm : Form
             var display = orders.Select(o => new
             {
                 o.Id,
-                o.OrderNo,
-                o.Supplier,
-                金額 = o.TotalAmount.ToString("N0"),
-                o.Status,
+                供應商 = o.Supplier,
+                備註 = o.Note,
                 建立者 = o.CreatedBy,
-                建立時間 = o.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                建立時間 = o.OrderDate.ToLocalTime().ToString("yyyy/MM/dd HH:mm")
             }).ToList();
 
             dgvOrders.DataSource = null;
