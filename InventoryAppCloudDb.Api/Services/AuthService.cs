@@ -36,16 +36,13 @@ public class AuthService : IAuthService
             Role = user.Role,
         });
     }
-    public async Task<(bool IsValid, string Role)> ValidateTokenAsync(string token)
+    public async Task<(bool IsValid, string Role, string Username)> ValidateTokenAsync(string token)
     {
         var userToken = await _ctx.UserTokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Token == token
-                                   && t.ExpiresAt > DateTime.UtcNow);
+            .FirstOrDefaultAsync(t => t.Token == token && t.ExpiresAt > DateTime.UtcNow);
 
-        if (userToken == null)
-            return (false, "");
-
-        return (true, userToken.User!.Role);
+        if (userToken == null) return (false, "", "");
+        return (true, userToken.User!.Role, userToken.User!.Username);
     }
 }

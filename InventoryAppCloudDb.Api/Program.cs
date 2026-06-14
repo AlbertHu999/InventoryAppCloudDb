@@ -15,6 +15,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IProductRepository, EFProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
 
 builder.Services.AddOpenApi();
 
@@ -105,6 +107,52 @@ app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc) =>
         : Results.NotFound(result);
 })
 .WithTags("商品管理");
+
+// ── 進貨單 API ─────────────────────────────────────────
+app.MapGet("/api/purchases", async (IPurchaseService svc) =>
+{
+    var result = await svc.GetAllAsync();
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+}).WithTags("進貨管理");
+
+app.MapGet("/api/purchases/{id:int}", async (int id, IPurchaseService svc) =>
+{
+    var result = await svc.GetByIdAsync(id);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
+}).WithTags("進貨管理");
+
+app.MapPost("/api/purchases", async (
+    CreatePurchaseOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
+{
+    var createdBy = ctx.Items["Username"]?.ToString() ?? "";
+    var result = await svc.CreateAsync(dto, createdBy);
+    return result.Success
+        ? Results.Created($"/api/purchases/{result.Data!.Id}", result)
+        : Results.BadRequest(result);
+}).WithTags("進貨管理");
+
+// ── 銷貨單 API ─────────────────────────────────────────
+app.MapGet("/api/sales", async (ISalesService svc) =>
+{
+    var result = await svc.GetAllAsync();
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+}).WithTags("銷貨管理");
+
+app.MapGet("/api/sales/{id:int}", async (int id, ISalesService svc) =>
+{
+    var result = await svc.GetByIdAsync(id);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
+}).WithTags("銷貨管理");
+
+app.MapPost("/api/sales", async (
+    CreateSalesOrderDto dto, ISalesService svc, HttpContext ctx) =>
+{
+    var createdBy = ctx.Items["Username"]?.ToString() ?? "";
+    var result = await svc.CreateAsync(dto, createdBy);
+    return result.Success
+        ? Results.Created($"/api/sales/{result.Data!.Id}", result)
+        : Results.BadRequest(result);
+}).WithTags("銷貨管理");
 
 // ── 驗證 API ─────────────────────────────────────────
 app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc) =>

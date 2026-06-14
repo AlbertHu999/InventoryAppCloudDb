@@ -1,5 +1,5 @@
-# @baseUrl = https://localhost:7165
-@baseUrl = https://inventory-api-194340759475.asia-east1.run.app
+@baseUrl = https://localhost:7165
+# @baseUrl = https://inventory-api-194340759475.asia-east1.run.app
 
 ### 查詢所有商品
 GET {{baseUrl}}/api/products
@@ -83,8 +83,76 @@ GET {{baseUrl}}/api/products
 
 ### 3. 帶 Token 查詢（把下面的 Token 換成步驟1拿到的）
 GET {{baseUrl}}/api/products
-Authorization: Bearer f80242be63924386b86d465eba93e407
+Authorization: Bearer 0e906df1e2c0483a9e407e12bffd25c7
 
 ### 4. 帶錯誤 Token（應該 401）
 GET {{baseUrl}}/api/products
 Authorization: Bearer abc123
+
+
+#進銷存本機api測試
+### 1. 登入取得 Token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin1234"
+}
+
+###
+
+### 2. 查詢目前商品庫存（記下要進貨的商品 Id）
+GET {{baseUrl}}/api/products
+Authorization: Bearer c8087ac693f54398a047e800c7323697
+
+###
+
+### 3. 進貨（選一個商品 Id 填入）
+POST {{baseUrl}}/api/purchases
+Content-Type: application/json
+Authorization: Bearer c8087ac693f54398a047e800c7323697
+
+{
+  "supplier": "統一企業",
+  "note": "測試進貨",
+  "details": [
+    { "productId": 4, "quantity": 20, "unitPrice": 30 }
+  ]
+}
+
+###
+
+### 4. 確認庫存有增加
+GET {{baseUrl}}/api/products/4
+Authorization: Bearer c8087ac693f54398a047e800c7323697
+
+###
+
+### 5. 銷貨（出 5 件）
+POST {{baseUrl}}/api/sales
+Content-Type: application/json
+Authorization: Bearer c8087ac693f54398a047e800c7323697
+
+{
+  "customer": "測試客戶",
+  "note": "測試銷貨",
+  "details": [
+    { "productId": 4, "quantity": 5, "unitPrice": 35 }
+  ]
+}
+
+###
+
+### 6. 測試庫存不足（出 9999 件，應被擋）
+POST {{baseUrl}}/api/sales
+Content-Type: application/json
+Authorization: Bearer c8087ac693f54398a047e800c7323697
+
+{
+  "customer": "測試客戶",
+  "note": "庫存不足測試",
+  "details": [
+    { "productId": 4, "quantity": 9999, "unitPrice": 35 }
+  ]
+}

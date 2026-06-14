@@ -9,5 +9,5 @@ using InventoryAppCloudDb.Api.Models;
 public interface IAuthService
 {
     Task<ServiceResult<LoginResponseDto>> LoginAsync(string username, string password);
-    Task<(bool IsValid, string Role)> ValidateTokenAsync(string token);
+    Task<(bool IsValid, string Role, string Username)> ValidateTokenAsync(string token);
 }

@@ -47,7 +47,7 @@ public class TokenAuthMiddleware
             return;
         }
 
-        var (isValid, role) = await authService.ValidateTokenAsync(token);
+        var (isValid, role, username) = await authService.ValidateTokenAsync(token);
 
         if (!isValid)
         {
@@ -58,8 +58,9 @@ public class TokenAuthMiddleware
             return;
         }
 
-        // 把角色存進 HttpContext，之後 Endpoint 可以讀取
+        // 把角色和使用者名稱存進 HttpContext
         ctx.Items["UserRole"] = role;
+        ctx.Items["Username"] = username;   // ← 新增這行
         await _next(ctx);
     }
 }
