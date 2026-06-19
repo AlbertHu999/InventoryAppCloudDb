@@ -36,7 +36,7 @@ public partial class PurchaseForm : Form
         dgvDetails.Columns.Add(new DataGridViewTextBoxColumn
         {
             HeaderText = "單價",
-            DataPropertyName = "UnitCost",
+            DataPropertyName = "UnitPrice",
             Width = 80
         });
 
@@ -102,7 +102,7 @@ public partial class PurchaseForm : Form
         {
             ProductId = product.Id,
             Quantity = qty,
-            UnitCost = cost
+            UnitPrice = cost
         });
 
         // 清空輸入欄，方便繼續加下一筆

@@ -36,5 +36,5 @@ public class CreatePurchaseDetailDto
 {
     public int ProductId { get; set; }
     public int Quantity { get; set; }
-    public decimal UnitCost { get; set; }
+    public decimal UnitPrice { get; set; }
 }
