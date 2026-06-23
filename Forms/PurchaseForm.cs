@@ -13,6 +13,9 @@ public partial class PurchaseForm : Form
 
     // 商品下拉選單的資料來源
     private List<ProductDto> _products = [];
+ 
+    // 目前載入的進貨單清單（供點擊查看明細用）
+    private List<PurchaseOrderDto> _orders = [];
 
     public PurchaseForm()
     {
@@ -45,6 +48,7 @@ public partial class PurchaseForm : Form
         btnAddDetail.Click += BtnAddDetail_Click;
         btnRemoveDetail.Click += BtnRemoveDetail_Click;
         btnCreate.Click += async (_, _) => await BtnCreate_ClickAsync();
+        dgvOrders.SelectionChanged += DgvOrders_SelectionChanged;
     }
 
     // ── 載入：進貨單列表 + 商品下拉 ──────────────────
@@ -59,9 +63,8 @@ public partial class PurchaseForm : Form
             cboProduct.ValueMember = "Id";
 
             // 載入進貨單列表
-            var orders = await _api.GetPurchaseOrdersAsync();
-            var display = orders.Select(o => new
-            {
+            _orders = await _api.GetPurchaseOrdersAsync();
+            var display = _orders.Select(o => new {
                 o.Id,
                 供應商 = o.Supplier,
                 備註 = o.Note,
@@ -115,6 +118,32 @@ public partial class PurchaseForm : Form
     {
         if (dgvDetails.CurrentRow == null) return;
         _details.RemoveAt(dgvDetails.CurrentRow.Index);
+    }
+
+    // ── 點擊左側列表：把該筆明細顯示到右側明細欄 ──────
+    private void DgvOrders_SelectionChanged(object? sender, EventArgs e)
+    {
+        if (dgvOrders.CurrentRow == null) return;
+
+        var rowIndex = dgvOrders.CurrentRow.Index;
+        if (rowIndex < 0 || rowIndex >= _orders.Count) return;
+
+        var selectedOrder = _orders[rowIndex];
+
+        // 把該筆進貨單的明細，轉成右側可顯示的格式
+        _details.Clear();
+        foreach (var d in selectedOrder.Details)
+        {
+            _details.Add(new CreatePurchaseDetailDto
+            {
+                ProductId = d.ProductId,
+                Quantity = d.Quantity,
+                UnitPrice = d.UnitPrice
+            });
+        }
+
+        // 同時把供應商名稱顯示出來（方便核對，但不能修改既有單）
+        txtSupplier.Text = selectedOrder.Supplier;
     }
 
     // ── 建立進貨單 ────────────────────────────────────
