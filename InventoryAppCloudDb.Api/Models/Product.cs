@@ -27,4 +27,11 @@ public class Product
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // ── Phase 5.5 新增 ──
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;   // 商品停用/啟用（不刪除，改停用）
+
+    [Column("updated_at")]
+    public DateTime? UpdatedAt { get; set; }      // 最後修改時間（可為 null）
 }
