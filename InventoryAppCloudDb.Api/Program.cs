@@ -13,8 +13,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IProductRepository, EFProductRepository>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPurchaseRepository, EFPurchaseRepository>();          // ← Phase 5.5 新增
+builder.Services.AddScoped<ISalesRepository, EFSalesRepository>();                // ← Phase 5.5 新增
+builder.Services.AddScoped<IInventoryLedgerRepository, EFInventoryLedgerRepository>();  // ← Phase 5.5 新增
+builder.Services.AddScoped<IProductService, ProductService>(); builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 

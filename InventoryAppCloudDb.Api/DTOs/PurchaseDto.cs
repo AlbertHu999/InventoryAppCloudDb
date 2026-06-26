@@ -30,6 +30,6 @@ public class PurchaseOrderDto
     public string Supplier { get; set; } = "";
     public string Note { get; set; } = "";
     public string CreatedBy { get; set; } = "";
+    public string Status { get; set; } = "";   // ← Phase 5.5 新增（Posted / Voided）
     public List<PurchaseDetailResponseDto> Details { get; set; } = [];
-    public decimal TotalAmount => Details.Sum(d => d.Subtotal);
 }

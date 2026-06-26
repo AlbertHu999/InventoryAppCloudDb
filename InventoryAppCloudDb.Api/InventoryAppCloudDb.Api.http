@@ -83,14 +83,41 @@ GET {{baseUrl}}/api/products
 
 ### 3. 帶 Token 查詢（把下面的 Token 換成步驟1拿到的）
 GET {{baseUrl}}/api/products
-Authorization: Bearer 0e906df1e2c0483a9e407e12bffd25c7
+Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
 
 ### 4. 帶錯誤 Token（應該 401）
 GET {{baseUrl}}/api/products
 Authorization: Bearer abc123
 
+### 測試彙總檢查：abc飲品2 庫存28，同單兩筆各20，合計40
+###
+POST {{baseUrl}}/api/sales
+Content-Type: application/json
+Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
 
-#進銷存本機api測試
+{
+  "customer": "彙總測試",
+  "note": "測試兩階段驗證",
+  "details": [
+    { "productId": 7, "quantity": 20, "unitPrice": 15 },
+    { "productId": 7, "quantity": 20, "unitPrice": 15 }
+  ]
+}
+
+###
+POST {{baseUrl}}/api/purchases
+Content-Type: application/json
+Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
+
+{
+  "supplier": "流水帳測試商",
+  "note": "驗證Ledger產生",
+  "details": [
+    { "productId": 7, "quantity": 10, "unitPrice": 8 }
+  ]
+}
+
+###進銷存本機api測試
 ### 1. 登入取得 Token
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
@@ -156,3 +183,4 @@ Authorization: Bearer c8087ac693f54398a047e800c7323697
     { "productId": 4, "quantity": 9999, "unitPrice": 35 }
   ]
 }
+

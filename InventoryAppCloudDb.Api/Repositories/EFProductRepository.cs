@@ -57,4 +57,15 @@ public class EFProductRepository : IProductRepository
         await _ctx.SaveChangesAsync();
         return true;
     }
+
+    // ── Phase 5.5 新增：只更新庫存（進銷貨異動專用）──
+    public async Task UpdateStockAsync(int productId, int newStock)
+    {
+        var product = await _ctx.Products.FindAsync(productId);
+        if (product != null)
+        {
+            product.Stock = newStock;
+            await _ctx.SaveChangesAsync();
+        }
+    }
 }
