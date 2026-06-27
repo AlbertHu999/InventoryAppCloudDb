@@ -186,34 +186,50 @@ public partial class productForm : Form
     }
 
     // ── 刪除 ──────────────────────────────────────────
+    // ── 停用商品（原刪除，改為停用，保留歷史記錄）──
     private async void btnDelete_Click(object? sender, EventArgs e)
     {
         if (_bindingSource.Current is not ProductDto selected) return;
 
         var confirm = MessageBox.Show(
-            $"確定要刪除「{selected.Name}」嗎？",
-            "刪除確認",
+            $"確定要停用「{selected.Name}」嗎？\n（不會刪除歷史記錄，只是不再顯示於新增單據的選單中）",
+            "停用確認",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
 
         if (confirm != DialogResult.Yes) return;
 
         SetLoading(true);
-        var (success, message) = await _api.DeleteProductAsync(selected.Id);
-        SetLoading(false);
+        try
+        {
+            var (success, message) = await _api.DeactivateProductAsync(selected.Id);
 
-        if (success)
-        {
-            lblStatus.Text = $"🗑️ 已刪除：{selected.Name}";
-            await LoadProductsAsync();
+            if (success)
+            {
+                lblStatus.Text = $"✅ 已停用：{selected.Name}";
+                await LoadProductsAsync();
+            }
+            else
+            {
+                MessageBox.Show(message, "停用失敗",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
-        else
+        catch (InvalidOperationException ex)   // 403 沒權限
         {
-            MessageBox.Show(message, "刪除失敗",
+            MessageBox.Show(ex.Message, "權限不足",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+        catch (UnauthorizedAccessException)    // 401 登入過期
+        {
+            MessageBox.Show("登入已過期，請重新登入。", "提示",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            SetLoading(false);
+        }
     }
-
     // ── 選取列時填回輸入欄位 ──────────────────────────
     private void dgvProducts_SelectionChanged(object? sender, EventArgs e)
     {

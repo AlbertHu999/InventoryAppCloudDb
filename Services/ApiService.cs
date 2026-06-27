@@ -47,6 +47,10 @@ public class ApiService
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException("Token 已過期");
 
+        // 403：已登入但沒權限（不需跳回登入，只是這個操作不允許）
+        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            throw new InvalidOperationException("您沒有權限執行此操作");
+
         return response;
     }
     
@@ -190,5 +194,72 @@ public class ApiService
         public bool Success { get; set; }
         public string Message { get; set; } = "";
         public T? Data { get; set; }
+    }
+    // ════════════════════════════════════════════════════════
+    //  Phase 5.5 Day45-46：停用 / 啟用 / 作廢 / 流水帳
+    // ════════════════════════════════════════════════════════
+
+    // ── 停用商品 ──────────────────────────────────────
+    public async Task<(bool Success, string Message)> DeactivateProductAsync(int id)
+    {
+        var response = await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/products/{id}/deactivate", null));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<object>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, "停用成功")
+            : (false, result?.Message ?? "停用失敗");
+    }
+
+    // ── 啟用商品 ──────────────────────────────────────
+    public async Task<(bool Success, string Message)> ActivateProductAsync(int id)
+    {
+        var response = await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/products/{id}/activate", null));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<object>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, "啟用成功")
+            : (false, result?.Message ?? "啟用失敗");
+    }
+
+    // ── 作廢進貨單 ────────────────────────────────────
+    public async Task<(bool Success, string Message)> VoidPurchaseOrderAsync(int id, string reason)
+    {
+        var dto = new { reason };
+        var response = await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/purchases/{id}/void", ToJson(dto)));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<object>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, "作廢成功")
+            : (false, result?.Message ?? "作廢失敗");
+    }
+
+    // ── 作廢銷貨單 ────────────────────────────────────
+    public async Task<(bool Success, string Message)> VoidSalesOrderAsync(int id, string reason)
+    {
+        var dto = new { reason };
+        var response = await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/sales/{id}/void", ToJson(dto)));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<object>>(json, _jsonOpt);
+        return response.IsSuccessStatusCode
+            ? (true, "作廢成功")
+            : (false, result?.Message ?? "作廢失敗");
+    }
+
+    // ── 查詢庫存流水帳 ────────────────────────────────
+    public async Task<List<InventoryLedgerDto>> GetInventoryLedgersAsync(int? productId = null)
+    {
+        var url = productId.HasValue
+            ? $"{_baseUrl}/api/inventory-ledgers/product/{productId}"
+            : $"{_baseUrl}/api/inventory-ledgers";
+
+        var response = await SendAsync(() => _http.GetAsync(url));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<List<InventoryLedgerDto>>>(json, _jsonOpt);
+        return result?.Data ?? [];
     }
 }

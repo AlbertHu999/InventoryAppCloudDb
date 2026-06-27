@@ -23,6 +23,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 builder.Services.AddOpenApi();
 
@@ -84,8 +85,11 @@ app.MapGet("/api/products/category/{category}", async (string category, IProduct
 .WithTags("商品管理");
 
 // POST /api/products — 新增商品
-app.MapPost("/api/products", async (CreateProductDto dto, IProductService svc) =>
+app.MapPost("/api/products", async (CreateProductDto dto, IProductService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可新增商品"), statusCode: 403);
+
     var result = await svc.CreateAsync(dto);
     return result.Success
         ? Results.Created($"/api/products/{result.Data!.Id}", result)
@@ -94,36 +98,44 @@ app.MapPost("/api/products", async (CreateProductDto dto, IProductService svc) =
 .WithTags("商品管理");
 
 // PUT /api/products/3 — 修改商品
-app.MapPut("/api/products/{id:int}", async (int id, UpdateProductDto dto, IProductService svc) =>
+app.MapPut("/api/products/{id:int}", async (int id, UpdateProductDto dto, IProductService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可修改商品"), statusCode: 403);
+
     var result = await svc.UpdateAsync(id, dto);
-    return result.Success
-        ? Results.Ok(result)
-        : Results.NotFound(result);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
 })
 .WithTags("商品管理");
 
 // DELETE /api/products/3 — 刪除商品
-app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc) =>
+app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可刪除商品"), statusCode: 403);
+
     var result = await svc.DeleteAsync(id);
-    return result.Success
-        ? Results.Ok(result)
-        : Results.NotFound(result);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
 })
 .WithTags("商品管理");
 
 // POST /api/products/3/deactivate — 停用商品（Phase 5.5）
-app.MapPost("/api/products/{id:int}/deactivate", async (int id, IProductService svc) =>
+app.MapPost("/api/products/{id:int}/deactivate", async (int id, IProductService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可停用商品"), statusCode: 403);
+
     var result = await svc.DeactivateAsync(id);
     return result.Success ? Results.Ok(result) : Results.NotFound(result);
 })
 .WithTags("商品管理");
 
 // POST /api/products/3/activate — 啟用商品（Phase 5.5）
-app.MapPost("/api/products/{id:int}/activate", async (int id, IProductService svc) =>
+app.MapPost("/api/products/{id:int}/activate", async (int id, IProductService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可啟用商品"), statusCode: 403);
+
     var result = await svc.ActivateAsync(id);
     return result.Success ? Results.Ok(result) : Results.NotFound(result);
 })
@@ -156,13 +168,16 @@ app.MapPost("/api/purchases", async (
 }).WithTags("進貨管理");
 
 // POST /api/purchases/1/void — 作廢進貨單（Phase 5.5）
-app.MapPost("/api/purchases/{id:int}/void", async (
-    int id, VoidOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
+app.MapPost("/api/purchases/{id:int}/void", async (int id, VoidOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可作廢單據"), statusCode: 403);
+
     var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
     return result.Success ? Results.Ok(result) : Results.BadRequest(result);
-}).WithTags("進貨管理");
+})
+.WithTags("進貨管理");
 
 // ════════════════════════════════════════════════════════
 //  銷貨管理
@@ -191,13 +206,34 @@ app.MapPost("/api/sales", async (
 }).WithTags("銷貨管理");
 
 // POST /api/sales/1/void — 作廢銷貨單（Phase 5.5）
-app.MapPost("/api/sales/{id:int}/void", async (
-    int id, VoidOrderDto dto, ISalesService svc, HttpContext ctx) =>
+app.MapPost("/api/sales/{id:int}/void", async (int id, VoidOrderDto dto, ISalesService svc, HttpContext ctx) =>
 {
+    if (!ctx.IsAdmin())
+        return Results.Json(ServiceResult.Fail("僅管理員可作廢單據"), statusCode: 403);
+
     var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
     return result.Success ? Results.Ok(result) : Results.BadRequest(result);
-}).WithTags("銷貨管理");
+})
+.WithTags("銷貨管理");
+
+// ════════════════════════════════════════════════════════
+//  庫存流水帳
+// ════════════════════════════════════════════════════════
+
+app.MapGet("/api/inventory-ledgers", async (IInventoryService svc) =>
+{
+    var result = await svc.GetAllAsync();
+    return Results.Ok(result);
+}).WithTags("庫存流水帳");
+
+app.MapGet("/api/inventory-ledgers/product/{productId:int}", async (
+    int productId, IInventoryService svc) =>
+{
+    var result = await svc.GetByProductIdAsync(productId);
+    return Results.Ok(result);
+}).WithTags("庫存流水帳");
+
 
 // ════════════════════════════════════════════════════════
 //  驗證

@@ -78,6 +78,12 @@ Content-Type: application/json
   "password": "admin1234"
 }
 
+###
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "username": "staff", "password": "admin1234" }
+
 ### 2. 不帶 Token 查詢（應該 401）
 GET {{baseUrl}}/api/products
 
@@ -118,12 +124,24 @@ Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
 }
 
 ###
-POST {{baseUrl}}/api/purchases/5/void
+POST {{baseUrl}}/api/purchases/6/void
 Content-Type: application/json
-Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
+Authorization: Bearer bb2c7c6f46184f19a3e18956a934ab6f
 
 {
-  "reason": "測試作廢沖銷"
+  "reason": "User嘗試作廢"
+}
+###
+POST {{baseUrl}}/api/sales
+Content-Type: application/json
+Authorization: Bearer bb2c7c6f46184f19a3e18956a934ab6f
+
+{
+  "customer": "staff測試",
+  "note": "User可建單",
+  "details": [
+    { "productId": 8, "quantity": 1, "unitPrice": 50 }
+  ]
 }
 
 ###
@@ -172,11 +190,16 @@ Authorization: Bearer 87554f9587584422abf1e264266a269c
 ###
 POST {{baseUrl}}/api/purchases/6/void
 Content-Type: application/json
-Authorization: Bearer 87554f9587584422abf1e264266a269c
+Authorization: Bearer c214818d6a3d4cb6b50c1e69d22e9713
 
 {
   "reason": "測試負庫存防呆"
 }
+
+###
+GET {{baseUrl}}/api/inventory-ledgers
+Authorization: Bearer c214818d6a3d4cb6b50c1e69d22e9713
+
 
 ###進銷存本機api測試
 ### 1. 登入取得 Token

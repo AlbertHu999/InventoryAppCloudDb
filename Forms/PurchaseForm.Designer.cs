@@ -56,9 +56,8 @@ partial class PurchaseForm
 
         // ── 明細 DataGridView ──
         dgvDetails = new DataGridView();
-        dgvDetails.Location = new Point(590, 220);
-        dgvDetails.Size = new Size(560, 220);
-        dgvDetails.AllowUserToAddRows = false;
+        dgvDetails.Location = new Point(590, 245);
+        dgvDetails.Size = new Size(560, 195); dgvDetails.AllowUserToAddRows = false;
         dgvDetails.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         dgvDetails.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
@@ -89,6 +88,42 @@ partial class PurchaseForm
             Size = new Size(100, 28)
         };
 
+        // ── 備註 ──
+        lblNote = new Label { Text = "備註：", Location = new Point(590, 215), AutoSize = true };
+        txtNote = new TextBox { Location = new Point(660, 212), Width = 200 };
+
+        // ── 新增按鈕 ──
+        btnNew = new Button
+        {
+            Text = "新增進貨單",
+            Location = new Point(870, 450),
+            Size = new Size(120, 35),
+            BackColor = Color.ForestGreen,
+            ForeColor = Color.White,
+            Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold)
+        };
+
+        // ── 取消按鈕 ──
+        btnCancel = new Button
+        {
+            Text = "取消",
+            Location = new Point(870, 450),
+            Size = new Size(120, 35),
+            Visible = false
+        };
+
+        // ── 作廢按鈕 ──
+        btnVoid = new Button
+        {
+            Text = "作廢此單",
+            Location = new Point(730, 450),
+            Size = new Size(120, 35),
+            BackColor = Color.Firebrick,
+            ForeColor = Color.White,
+            Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold),
+            Visible = false
+        };
+
         // ── Form 設定 ──
         components = new System.ComponentModel.Container();
         AutoScaleMode = AutoScaleMode.Font;
@@ -97,24 +132,25 @@ partial class PurchaseForm
         Font = new Font("Microsoft JhengHei", 9f);
 
         Controls.AddRange(new Control[]
-        {
+                {
             dgvOrders, btnRefresh,
             lblSupplier, txtSupplier,
+            lblNote, txtNote,
             lblDetail,
             lblProduct, cboProduct,
             lblQty, txtQty,
             lblCost, txtCost,
             btnAddDetail,
             dgvDetails, btnRemoveDetail,
-            btnCreate
-        });
+            btnCreate, btnNew, btnCancel, btnVoid
+                });
     }
 
     // ── 控制項宣告 ──
     private DataGridView dgvOrders;
     private DataGridView dgvDetails;
-    private Label lblSupplier, lblDetail, lblProduct, lblQty, lblCost;
-    private TextBox txtSupplier, txtQty, txtCost;
+    private Label lblSupplier, lblNote, lblDetail, lblProduct, lblQty, lblCost;
+    private TextBox txtSupplier, txtNote, txtQty, txtCost;
     private ComboBox cboProduct;
-    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh;
+    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid;
 }

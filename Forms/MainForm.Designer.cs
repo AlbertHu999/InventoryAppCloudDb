@@ -12,12 +12,13 @@ partial class MainForm
 
     private void InitializeComponent()
     {
-        // ── MenuStrip ──
+        // ── MenuStrip ──menuStrip.Items.AddRange(new ToolStripItem[]
         menuStrip = new MenuStrip();
 
         mnuProduct = new ToolStripMenuItem("商品管理(&P)");
         mnuPurchase = new ToolStripMenuItem("進貨管理(&I)");
         mnuSales = new ToolStripMenuItem("銷貨管理(&S)");
+        mnuLedger = new ToolStripMenuItem("庫存流水帳(&L)");
         mnuSystem = new ToolStripMenuItem("系統(&Y)");
         mnuLogout = new ToolStripMenuItem("登出");
         mnuExit = new ToolStripMenuItem("結束程式");
@@ -27,12 +28,13 @@ partial class MainForm
         mnuSystem.DropDownItems.Add(mnuExit);
 
         menuStrip.Items.AddRange(new ToolStripItem[]
-        {
+                {
             mnuProduct,
             mnuPurchase,
             mnuSales,
+            mnuLedger,
             mnuSystem
-        });
+                });
 
         // ── 狀態列 ──
         statusStrip = new StatusStrip();
@@ -62,7 +64,7 @@ partial class MainForm
     }
 
     private MenuStrip menuStrip;
-    private ToolStripMenuItem mnuProduct, mnuPurchase, mnuSales;
+    private ToolStripMenuItem mnuProduct, mnuPurchase, mnuSales, mnuLedger;
     private ToolStripMenuItem mnuSystem, mnuLogout, mnuExit;
     private StatusStrip statusStrip;
     private ToolStripStatusLabel lblUser, lblStatus;

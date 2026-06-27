@@ -56,9 +56,8 @@ partial class SalesForm
 
         // ── 明細 DataGridView ──
         dgvDetails = new DataGridView();
-        dgvDetails.Location = new Point(590, 220);
-        dgvDetails.Size = new Size(560, 220);
-        dgvDetails.AllowUserToAddRows = false;
+        dgvDetails.Location = new Point(590, 245);
+        dgvDetails.Size = new Size(560, 195); dgvDetails.AllowUserToAddRows = false;
         dgvDetails.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         dgvDetails.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
@@ -89,6 +88,42 @@ partial class SalesForm
             Size = new Size(100, 28)
         };
 
+        // ── 備註 ──
+        lblNote = new Label { Text = "備註：", Location = new Point(590, 215), AutoSize = true };
+        txtNote = new TextBox { Location = new Point(660, 212), Width = 200 };
+
+        // ── 新增按鈕 ──
+        btnNew = new Button
+        {
+            Text = "新增銷貨單",
+            Location = new Point(870, 450),
+            Size = new Size(120, 35),
+            BackColor = Color.ForestGreen,
+            ForeColor = Color.White,
+            Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold)
+        };
+
+        // ── 取消按鈕 ──
+        btnCancel = new Button
+        {
+            Text = "取消",
+            Location = new Point(870, 450),
+            Size = new Size(120, 35),
+            Visible = false
+        };
+
+        // ── 作廢按鈕 ──
+        btnVoid = new Button
+        {
+            Text = "作廢此單",
+            Location = new Point(730, 450),
+            Size = new Size(120, 35),
+            BackColor = Color.Firebrick,
+            ForeColor = Color.White,
+            Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold),
+            Visible = false
+        };
+
         // ── Form 設定 ──
         components = new System.ComponentModel.Container();
         AutoScaleMode = AutoScaleMode.Font;
@@ -97,24 +132,26 @@ partial class SalesForm
         Font = new Font("Microsoft JhengHei", 9f);
 
         Controls.AddRange(new Control[]
-        {
+                {
             dgvOrders, btnRefresh,
             lblCustomer, txtCustomer,
+            lblNote, txtNote,
             lblDetail,
             lblProduct, cboProduct,
             lblQty, txtQty,
             lblPrice, txtPrice,
             btnAddDetail,
             dgvDetails, btnRemoveDetail,
-            btnCreate
-        });
+            btnCreate, btnNew, btnCancel, btnVoid
+                });
     }
 
     // ── 控制項宣告 ──
+    // ── 控制項宣告 ──
     private DataGridView dgvOrders;
     private DataGridView dgvDetails;
-    private Label lblCustomer, lblDetail, lblProduct, lblQty, lblPrice;
-    private TextBox txtCustomer, txtQty, txtPrice;
+    private Label lblCustomer, lblNote, lblDetail, lblProduct, lblQty, lblPrice;
+    private TextBox txtCustomer, txtNote, txtQty, txtPrice;
     private ComboBox cboProduct;
-    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh;
+    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid;
 }

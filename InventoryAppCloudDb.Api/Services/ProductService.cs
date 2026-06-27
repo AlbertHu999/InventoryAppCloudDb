@@ -1,17 +1,20 @@
 ﻿using InventoryAppCloudDb.Api.DTOs;
 using InventoryAppCloudDb.Api.Models;
 using InventoryAppCloudDb.Api.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventoryAppCloudDb.Api.Services;
 // Services/ProductService.cs
 public class ProductService : IProductService
 {
     private readonly IProductRepository _repo;
+    private readonly AppDbContext _ctx;   // ← 用於刪除前的引用檢查
 
     // Repository 由 DI 注入
-    public ProductService(IProductRepository repo)
+    public ProductService(IProductRepository repo, AppDbContext ctx)
     {
         _repo = repo;
+        _ctx = ctx;
     }
 
     // ── 查詢全部 ──────────────────────────────────────
@@ -85,28 +88,36 @@ public class ProductService : IProductService
         if (string.IsNullOrWhiteSpace(dto.Name))
             return ServiceResult<ProductDto>.Fail("商品名稱不能空白");
 
-        // 更新 Entity
+        // 更新 Entity（不含 Stock，庫存只能透過進銷貨異動）
         existing.Name = dto.Name.Trim();
         existing.Price = dto.Price;
-        existing.Stock = dto.Stock;
         existing.Category = dto.Category.Trim();
-
         await _repo.UpdateAsync(existing);
 
         return ServiceResult<ProductDto>.Ok(ToDto(existing));
     }
 
     // ── 刪除 ──────────────────────────────────────────
+    // ── 刪除（加保護：已被引用則拒絕真刪，引導改用停用）──
     public async Task<ServiceResult> DeleteAsync(int id)
     {
         var existing = await _repo.GetByIdAsync(id);
         if (existing == null)
             return ServiceResult.Fail($"找不到 Id={id} 的商品");
 
+        // 檢查是否被任何單據引用過
+        var hasBeenUsed =
+            await _ctx.PurchaseOrderDetails.AnyAsync(d => d.ProductId == id)
+         || await _ctx.SalesOrderDetails.AnyAsync(d => d.ProductId == id)
+         || await _ctx.InventoryLedgers.AnyAsync(l => l.ProductId == id);
+
+        if (hasBeenUsed)
+            return ServiceResult.Fail(
+                "此商品已有進貨/銷貨記錄，無法刪除，請改用「停用」功能保留歷史資料");
+
         await _repo.DeleteAsync(id);
         return ServiceResult.Ok();
     }
-
     // ── 私有轉換方法：Entity → DTO ────────────────────
     // 集中在這一個地方，之後欄位有變動只改這裡
     private static ProductDto ToDto(Product p) => new()
@@ -119,15 +130,13 @@ public class ProductService : IProductService
     };
 
     // ── Phase 5.5 Day43-44：停用商品（不刪除，保留歷史單據可追溯）──
-    public async Task<ServiceResult> DeactivateAsync(int id)
+   public async Task<ServiceResult> DeactivateAsync(int id)
     {
         var product = await _repo.GetByIdAsync(id);
         if (product == null)
             return ServiceResult.Fail($"找不到 Id={id} 的商品");
 
-        product.IsActive = false;
-        product.UpdatedAt = DateTime.UtcNow;
-        await _repo.UpdateAsync(product);
+        await _repo.UpdateActiveStatusAsync(id, false);   // ← 改用專屬方法
         return ServiceResult.Ok();
     }
 
@@ -138,9 +147,7 @@ public class ProductService : IProductService
         if (product == null)
             return ServiceResult.Fail($"找不到 Id={id} 的商品");
 
-        product.IsActive = true;
-        product.UpdatedAt = DateTime.UtcNow;
-        await _repo.UpdateAsync(product);
+        await _repo.UpdateActiveStatusAsync(id, true);    // ← 改用專屬方法
         return ServiceResult.Ok();
     }
 }
