@@ -107,7 +107,7 @@ Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
 ###
 POST {{baseUrl}}/api/purchases
 Content-Type: application/json
-Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
+Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
 
 {
   "supplier": "流水帳測試商",
@@ -115,6 +115,67 @@ Authorization: Bearer 78ac0828a1e64d8a9fb9280547f50914
   "details": [
     { "productId": 7, "quantity": 10, "unitPrice": 8 }
   ]
+}
+
+###
+POST {{baseUrl}}/api/purchases/5/void
+Content-Type: application/json
+Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
+
+{
+  "reason": "測試作廢沖銷"
+}
+
+###
+POST {{baseUrl}}/api/purchases/5/void
+Content-Type: application/json
+Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
+
+{
+  "reason": "重複作廢測試"
+}
+
+
+###
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer b6ece620dfdd4862b1356fa850c7bdc9
+
+###
+GET {{baseUrl}}/api/products
+Authorization: Bearer 87554f9587584422abf1e264266a269c
+
+###
+POST {{baseUrl}}/api/purchases
+Content-Type: application/json
+Authorization: Bearer 87554f9587584422abf1e264266a269c
+
+{
+  "supplier": "防呆測試商",
+  "note": "準備測試作廢防呆",
+  "details": [
+    { "productId": 7, "quantity": 5, "unitPrice": 10 }
+  ]
+}
+###
+
+POST {{baseUrl}}/api/sales
+Content-Type: application/json
+Authorization: Bearer 87554f9587584422abf1e264266a269c
+
+{
+  "customer": "防呆測試客",
+  "note": "賣光庫存",
+  "details": [
+    { "productId": 7, "quantity": 33, "unitPrice": 20 }
+  ]
+}
+###
+POST {{baseUrl}}/api/purchases/6/void
+Content-Type: application/json
+Authorization: Bearer 87554f9587584422abf1e264266a269c
+
+{
+  "reason": "測試負庫存防呆"
 }
 
 ###進銷存本機api測試

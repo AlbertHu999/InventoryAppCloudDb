@@ -11,4 +11,7 @@ public interface IProductService
     Task<ServiceResult<ProductDto>> CreateAsync(CreateProductDto dto);
     Task<ServiceResult<ProductDto>> UpdateAsync(int id, UpdateProductDto dto);
     Task<ServiceResult> DeleteAsync(int id);
+    // ── Phase 5.5 Day43-44 新增：停用 / 啟用 ──
+    Task<ServiceResult> DeactivateAsync(int id);
+    Task<ServiceResult> ActivateAsync(int id);
 }

@@ -39,10 +39,25 @@ public class AuthService : IAuthService
     public async Task<(bool IsValid, string Role, string Username)> ValidateTokenAsync(string token)
     {
         var userToken = await _ctx.UserTokens
-            .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.Token == token && t.ExpiresAt > DateTime.UtcNow);
-
+                    .Include(t => t.User)
+                    .FirstOrDefaultAsync(t => t.Token == token
+                                           && t.ExpiresAt > DateTime.UtcNow
+                                           && t.RevokedAt == null);   // ← 新增：排除已撤銷的 Token
         if (userToken == null) return (false, "", "");
         return (true, userToken.User!.Role, userToken.User!.Username);
+    }
+
+    // ── Phase 5.5 Day43-44：登出（撤銷 Token）──
+    public async Task<ServiceResult> LogoutAsync(string token)
+    {
+        var userToken = await _ctx.UserTokens
+            .FirstOrDefaultAsync(t => t.Token == token);
+
+        if (userToken == null)
+            return ServiceResult.Ok();   // Token 不存在也視為登出成功，不需報錯
+
+        userToken.RevokedAt = DateTime.UtcNow;
+        await _ctx.SaveChangesAsync();
+        return ServiceResult.Ok();
     }
 }

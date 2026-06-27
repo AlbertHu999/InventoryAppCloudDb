@@ -12,11 +12,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Repository 層
 builder.Services.AddScoped<IProductRepository, EFProductRepository>();
-builder.Services.AddScoped<IPurchaseRepository, EFPurchaseRepository>();          // ← Phase 5.5 新增
-builder.Services.AddScoped<ISalesRepository, EFSalesRepository>();                // ← Phase 5.5 新增
-builder.Services.AddScoped<IInventoryLedgerRepository, EFInventoryLedgerRepository>();  // ← Phase 5.5 新增
-builder.Services.AddScoped<IProductService, ProductService>(); builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPurchaseRepository, EFPurchaseRepository>();
+builder.Services.AddScoped<ISalesRepository, EFSalesRepository>();
+builder.Services.AddScoped<IInventoryLedgerRepository, EFInventoryLedgerRepository>();
+
+// Service 層
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 
@@ -45,10 +49,9 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
     );
 }));
 
-// ===== API 路由定義（對應四層架構的最外層）=====
-// ── 商品 API ─────────────────────────────────────────
-
-// ===== API 路由定義（對應四層架構的最外層）=====
+// ════════════════════════════════════════════════════════
+//  商品管理
+// ════════════════════════════════════════════════════════
 
 // GET /api/products — 取得所有商品
 app.MapGet("/api/products", async (IProductService svc) =>
@@ -110,7 +113,26 @@ app.MapDelete("/api/products/{id:int}", async (int id, IProductService svc) =>
 })
 .WithTags("商品管理");
 
-// ── 進貨單 API ─────────────────────────────────────────
+// POST /api/products/3/deactivate — 停用商品（Phase 5.5）
+app.MapPost("/api/products/{id:int}/deactivate", async (int id, IProductService svc) =>
+{
+    var result = await svc.DeactivateAsync(id);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
+})
+.WithTags("商品管理");
+
+// POST /api/products/3/activate — 啟用商品（Phase 5.5）
+app.MapPost("/api/products/{id:int}/activate", async (int id, IProductService svc) =>
+{
+    var result = await svc.ActivateAsync(id);
+    return result.Success ? Results.Ok(result) : Results.NotFound(result);
+})
+.WithTags("商品管理");
+
+// ════════════════════════════════════════════════════════
+//  進貨管理
+// ════════════════════════════════════════════════════════
+
 app.MapGet("/api/purchases", async (IPurchaseService svc) =>
 {
     var result = await svc.GetAllAsync();
@@ -133,7 +155,19 @@ app.MapPost("/api/purchases", async (
         : Results.BadRequest(result);
 }).WithTags("進貨管理");
 
-// ── 銷貨單 API ─────────────────────────────────────────
+// POST /api/purchases/1/void — 作廢進貨單（Phase 5.5）
+app.MapPost("/api/purchases/{id:int}/void", async (
+    int id, VoidOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
+{
+    var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
+    var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+}).WithTags("進貨管理");
+
+// ════════════════════════════════════════════════════════
+//  銷貨管理
+// ════════════════════════════════════════════════════════
+
 app.MapGet("/api/sales", async (ISalesService svc) =>
 {
     var result = await svc.GetAllAsync();
@@ -156,7 +190,19 @@ app.MapPost("/api/sales", async (
         : Results.BadRequest(result);
 }).WithTags("銷貨管理");
 
-// ── 驗證 API ─────────────────────────────────────────
+// POST /api/sales/1/void — 作廢銷貨單（Phase 5.5）
+app.MapPost("/api/sales/{id:int}/void", async (
+    int id, VoidOrderDto dto, ISalesService svc, HttpContext ctx) =>
+{
+    var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
+    var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+}).WithTags("銷貨管理");
+
+// ════════════════════════════════════════════════════════
+//  驗證
+// ════════════════════════════════════════════════════════
+
 app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc) =>
 {
     var result = await svc.LoginAsync(dto.Username, dto.Password);
@@ -166,6 +212,16 @@ app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc) =>
 })
 .WithTags("驗證");
 
-app.Run();
-     
+// POST /api/auth/logout — 登出（撤銷 Token，Phase 5.5）
+app.MapPost("/api/auth/logout", async (HttpContext ctx, IAuthService svc) =>
+{
+    var authHeader = ctx.Request.Headers["Authorization"].FirstOrDefault();
+    var token = authHeader?.StartsWith("Bearer ") == true
+        ? authHeader["Bearer ".Length..].Trim()
+        : "";
+    var result = await svc.LogoutAsync(token);
+    return Results.Ok(result);
+})
+.WithTags("驗證");
 
+app.Run();

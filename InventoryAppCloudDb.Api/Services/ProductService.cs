@@ -117,4 +117,30 @@ public class ProductService : IProductService
         Stock = p.Stock,
         Category = p.Category,
     };
+
+    // ── Phase 5.5 Day43-44：停用商品（不刪除，保留歷史單據可追溯）──
+    public async Task<ServiceResult> DeactivateAsync(int id)
+    {
+        var product = await _repo.GetByIdAsync(id);
+        if (product == null)
+            return ServiceResult.Fail($"找不到 Id={id} 的商品");
+
+        product.IsActive = false;
+        product.UpdatedAt = DateTime.UtcNow;
+        await _repo.UpdateAsync(product);
+        return ServiceResult.Ok();
+    }
+
+    // ── Phase 5.5 Day43-44：重新啟用商品 ──
+    public async Task<ServiceResult> ActivateAsync(int id)
+    {
+        var product = await _repo.GetByIdAsync(id);
+        if (product == null)
+            return ServiceResult.Fail($"找不到 Id={id} 的商品");
+
+        product.IsActive = true;
+        product.UpdatedAt = DateTime.UtcNow;
+        await _repo.UpdateAsync(product);
+        return ServiceResult.Ok();
+    }
 }

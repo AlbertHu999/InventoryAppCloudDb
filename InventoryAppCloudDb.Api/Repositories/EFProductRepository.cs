@@ -43,6 +43,8 @@ public class EFProductRepository : IProductRepository
         existing.Price = product.Price;
         existing.Stock = product.Stock;
         existing.Category = product.Category;
+        existing.IsActive = product.IsActive;    // ← Phase 5.5 新增
+        existing.UpdatedAt = product.UpdatedAt;   // ← Phase 5.5 新增
 
         await _ctx.SaveChangesAsync();
         return true;

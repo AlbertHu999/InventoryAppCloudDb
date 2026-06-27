@@ -138,6 +138,60 @@ public class SalesService : ISalesService
         }
     }
 
+    // ── Phase 5.5 Day43-44：作廢銷貨單（反向沖銷，加回庫存）──
+    public async Task<ServiceResult<SalesOrderDto>> VoidAsync(
+        int id, string reason, string voidedBy)
+    {
+        var order = await _salesRepo.GetByIdAsync(id);
+        if (order == null)
+            return ServiceResult<SalesOrderDto>.Fail($"找不到 Id={id} 的銷貨單");
+
+        if (order.Status != "Posted")
+            return ServiceResult<SalesOrderDto>.Fail("此單已作廢，無法重複作廢");
+
+        using var tx = await _ctx.Database.BeginTransactionAsync();
+        try
+        {
+            // 銷貨作廢 = 加回庫存，沒有變負數的風險，不需要第一階段驗證
+            order.Status = "Voided";
+            order.VoidedAt = DateTime.UtcNow;
+            order.VoidedBy = voidedBy;
+            order.VoidReason = reason ?? "";
+            await _salesRepo.UpdateAsync(order);
+
+            var ledgers = new List<InventoryLedger>();
+            foreach (var detail in order.Details)
+            {
+                var product = await _productRepo.GetByIdAsync(detail.ProductId);
+                if (product == null) continue;
+
+                await _productRepo.UpdateStockAsync(
+                    detail.ProductId, product.Stock + detail.Quantity);
+
+                ledgers.Add(new InventoryLedger
+                {
+                    ProductId = detail.ProductId,
+                    SourceType = "SalesVoid",
+                    SourceOrderId = order.Id,
+                    SourceDetailId = detail.Id,
+                    Direction = "In",             // ⚠️ 反向：原本 Out，作廢變 In
+                    Quantity = detail.Quantity,
+                    UnitPrice = detail.UnitPrice,
+                    CreatedBy = voidedBy,
+                    Remark = $"作廢銷貨單 #{order.Id}：{reason}",
+                });
+            }
+            await _ledgerRepo.AddRangeAsync(ledgers);
+
+            await tx.CommitAsync();
+            return await GetByIdAsync(order.Id);
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            return ServiceResult<SalesOrderDto>.Fail($"作廢失敗：{ex.Message}");
+        }
+    }
     private static SalesOrderDto ToDto(SalesOrder o) => new()
     {
         Id = o.Id,
