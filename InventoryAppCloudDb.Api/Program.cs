@@ -64,6 +64,14 @@ app.MapGet("/api/products", async (IProductService svc) =>
 })
 .WithTags("商品管理");
 
+// GET /api/products/active — 只取啟用中的商品（進貨/銷貨下拉用）
+app.MapGet("/api/products/active", async (IProductService svc) =>
+{
+    var result = await svc.GetActiveAsync();
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
+})
+.WithTags("商品管理");
+
 // GET /api/products/3 — 依 ID 取得單一商品
 app.MapGet("/api/products/{id:int}", async (int id, IProductService svc) =>
 {

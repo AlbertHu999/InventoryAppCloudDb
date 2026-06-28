@@ -28,6 +28,14 @@ public class ProductService : IProductService
         return ServiceResult<List<ProductDto>>.Ok(dtos);
     }
 
+    // ── 只取啟用中的商品 ──
+    public async Task<ServiceResult<List<ProductDto>>> GetActiveAsync()
+    {
+        var products = await _repo.GetActiveAsync();
+        var dtos = products.Select(p => ToDto(p)).ToList();
+        return ServiceResult<List<ProductDto>>.Ok(dtos);
+    }
+
     // ── 查詢單筆 ──────────────────────────────────────
     public async Task<ServiceResult<ProductDto>> GetByIdAsync(int id)
     {

@@ -70,7 +70,8 @@ public partial class PurchaseForm : Form
     {
         try
         {
-            _products = await _api.GetProductsAsync();
+            //_products = await _api.GetProductsAsync();
+            _products = await _api.GetActiveProductsAsync();   // 只載入啟用商品
             cboProduct.DataSource = _products;
             cboProduct.DisplayMember = "Name";
             cboProduct.ValueMember = "Id";

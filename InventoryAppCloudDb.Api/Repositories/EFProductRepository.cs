@@ -16,6 +16,13 @@ public class EFProductRepository : IProductRepository
     public async Task<List<Product>> GetAllAsync()
         => await _ctx.Products.OrderBy(p => p.Id).ToListAsync();
 
+    // ── 只取啟用中的商品（供進貨/銷貨下拉選用）──
+    public async Task<List<Product>> GetActiveAsync()
+        => await _ctx.Products
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+
     public async Task<Product?> GetByIdAsync(int id)
         => await _ctx.Products.FindAsync(id);
 

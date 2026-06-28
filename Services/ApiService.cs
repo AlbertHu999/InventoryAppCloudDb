@@ -86,6 +86,16 @@ public class ApiService
         return result?.Data ?? [];
     }
 
+    // ── 只取啟用中的商品（進貨/銷貨下拉用）──
+    public async Task<List<ProductDto>> GetActiveProductsAsync()
+    {
+        var response = await SendAsync(() => _http.GetAsync($"{_baseUrl}/api/products/active"));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<List<ProductDto>>>(json, _jsonOpt);
+        return result?.Data ?? [];
+    }
+    
     // ── 查詢單筆 ──────────────────────────────────────
     public async Task<ProductDto?> GetProductByIdAsync(int id)
     {

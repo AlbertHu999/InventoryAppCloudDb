@@ -14,4 +14,5 @@ public interface IProductService
     // ── Phase 5.5 Day43-44 新增：停用 / 啟用 ──
     Task<ServiceResult> DeactivateAsync(int id);
     Task<ServiceResult> ActivateAsync(int id);
+    Task<ServiceResult<List<ProductDto>>> GetActiveAsync();
 }

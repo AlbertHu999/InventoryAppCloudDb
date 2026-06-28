@@ -12,4 +12,5 @@ public interface IProductRepository
     Task<bool> DeleteAsync(int id);
     Task UpdateStockAsync(int productId, int newStock);   // ← Phase 5.5 新增
     Task UpdateActiveStatusAsync(int productId, bool isActive);
+    Task<List<Product>> GetActiveAsync();
 }
