@@ -135,6 +135,7 @@ public class ProductService : IProductService
         Price = p.Price,
         Stock = p.Stock,
         Category = p.Category,
+        IsActive = p.IsActive,     // ← 新增
     };
 
     // ── Phase 5.5 Day43-44：停用商品（不刪除，保留歷史單據可追溯）──

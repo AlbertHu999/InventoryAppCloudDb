@@ -88,6 +88,13 @@ partial class PurchaseForm
             Size = new Size(100, 28)
         };
 
+        btnExportExcel = new Button
+        {
+            Text = "匯出 Excel",
+            Location = new Point(120, 15),
+            Size = new Size(100, 28)
+        };
+
         // ── 備註 ──
         lblNote = new Label { Text = "備註：", Location = new Point(590, 215), AutoSize = true };
         txtNote = new TextBox { Location = new Point(660, 212), Width = 200 };
@@ -133,7 +140,7 @@ partial class PurchaseForm
 
         Controls.AddRange(new Control[]
                 {
-            dgvOrders, btnRefresh,
+            dgvOrders, btnRefresh, btnExportExcel,
             lblSupplier, txtSupplier,
             lblNote, txtNote,
             lblDetail,
@@ -152,5 +159,5 @@ partial class PurchaseForm
     private Label lblSupplier, lblNote, lblDetail, lblProduct, lblQty, lblCost;
     private TextBox txtSupplier, txtNote, txtQty, txtCost;
     private ComboBox cboProduct;
-    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid;
+    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid, btnExportExcel;
 }

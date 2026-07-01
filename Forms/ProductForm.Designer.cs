@@ -40,6 +40,8 @@
         btnUpdate = new Button();
         btnDelete = new Button();
         btnClear = new Button();
+        btnActivate = new Button();
+        btnExportExcel = new Button();
         label5 = new Label();
         txtSearch = new TextBox();
         dgvProducts = new DataGridView();
@@ -151,10 +153,27 @@
         btnClear.Text = "清除";
         btnClear.UseVisualStyleBackColor = true;
         // 
+        // btnActivate
+        // 
+        btnActivate.Location = new Point(294, 145);
+        btnActivate.Name = "btnActivate";
+        btnActivate.Size = new Size(75, 23);
+        btnActivate.TabIndex = 10;
+        btnActivate.Text = "啟用";
+        btnActivate.UseVisualStyleBackColor = true;
+        // 
+        // btnExportExcel
+        // 
+        btnExportExcel.Location = new Point(564, 145);
+        btnExportExcel.Name = "btnExportExcel";
+        btnExportExcel.Size = new Size(90, 23);
+        btnExportExcel.Text = "匯出 Excel";
+        btnExportExcel.UseVisualStyleBackColor = true;
+        // 
         // label5
         // 
         label5.AutoSize = true;
-        label5.Location = new Point(60, 171);
+        label5.Location = new Point(60, 189);
         label5.Name = "label5";
         label5.Size = new Size(31, 15);
         label5.TabIndex = 12;
@@ -162,7 +181,7 @@
         // 
         // txtSearch
         // 
-        txtSearch.Location = new Point(111, 168);
+        txtSearch.Location = new Point(111, 186);
         txtSearch.Name = "txtSearch";
         txtSearch.Size = new Size(271, 23);
         txtSearch.TabIndex = 13;
@@ -170,7 +189,7 @@
         // dgvProducts
         // 
         dgvProducts.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        dgvProducts.Location = new Point(39, 210);
+        dgvProducts.Location = new Point(39, 228);
         dgvProducts.Name = "dgvProducts";
         dgvProducts.RowHeadersWidth = 62;
         dgvProducts.Size = new Size(728, 275);
@@ -179,7 +198,7 @@
         // lblStatus
         // 
         lblStatus.AutoSize = true;
-        lblStatus.Location = new Point(327, 515);
+        lblStatus.Location = new Point(329, 526);
         lblStatus.Name = "lblStatus";
         lblStatus.Size = new Size(62, 15);
         lblStatus.TabIndex = 15;
@@ -187,7 +206,7 @@
         // 
         // btnStats
         // 
-        btnStats.Location = new Point(427, 167);
+        btnStats.Location = new Point(427, 185);
         btnStats.Name = "btnStats";
         btnStats.Size = new Size(75, 23);
         btnStats.TabIndex = 16;
@@ -226,6 +245,8 @@
         Controls.Add(label5);
         Controls.Add(btnClear);
         Controls.Add(btnDelete);
+        Controls.Add(btnActivate);
+        Controls.Add(btnExportExcel);
         Controls.Add(btnUpdate);
         Controls.Add(btnAdd);
         Controls.Add(cboCategory);
@@ -256,7 +277,9 @@
         private Button btnAdd;
         private Button btnUpdate;
         private Button btnDelete;
-        private Button btnClear;
+        private Button btnActivate;
+          private Button btnExportExcel;
+          private Button btnClear;
         private Label label5;
         private TextBox txtSearch;
         private DataGridView dgvProducts;

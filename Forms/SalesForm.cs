@@ -26,6 +26,7 @@ public partial class SalesForm : Form
 
         Load += async (_, _) => await LoadDataAsync();
         btnRefresh.Click += async (_, _) => { SetMode(FormMode.Initial); await LoadDataAsync(); };
+        btnExportExcel.Click += btnExportExcel_Click;
         btnAddDetail.Click += BtnAddDetail_Click;
         btnRemoveDetail.Click += BtnRemoveDetail_Click;
         btnCreate.Click += async (_, _) => await BtnSave_ClickAsync();
@@ -222,6 +223,49 @@ public partial class SalesForm : Form
         catch (InvalidOperationException ex)
         {
             MessageBox.Show(ex.Message, "權限不足", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+    // ── 匯出銷貨明細 Excel ────────────────────────────
+    private void btnExportExcel_Click(object? sender, EventArgs e)
+    {
+        if (_orders.Count == 0)
+        {
+            MessageBox.Show("目前沒有銷貨資料可匯出。", "提示");
+            return;
+        }
+
+        using var sfd = new SaveFileDialog
+        {
+            Filter = "Excel 檔案|*.xlsx",
+            FileName = $"銷貨明細_{DateTime.Now:yyyyMMdd}.xlsx"
+        };
+
+        if (sfd.ShowDialog() != DialogResult.OK) return;
+
+        try
+        {
+            ExcelExportService.ExportSalesOrders(_orders, sfd.FileName);
+            ShowExportSuccess(sfd.FileName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"匯出失敗：{ex.Message}", "錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void ShowExportSuccess(string filePath)
+    {
+        var open = MessageBox.Show("匯出成功！是否立即開啟檔案？", "完成",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+        if (open == DialogResult.Yes)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true
+            });
         }
     }
 }

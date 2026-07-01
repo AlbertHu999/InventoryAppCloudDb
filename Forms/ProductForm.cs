@@ -26,7 +26,9 @@ public partial class productForm : Form
         lblUser.Text = $"登入者：{AppSession.Username}（{AppSession.Role}）";
 
         // Admin 才能刪除
-        btnDelete.Enabled = AppSession.IsAdmin;
+        //btnDelete.Enabled = AppSession.IsAdmin;
+        // 停用/啟用鈕的可用性由 UpdateActiveButtons() 統一控制
+        // （同時考量 Admin 權限 + 商品目前狀態）
 
         //分類初始化
         cboCategory.Items.AddRange(new[] { "飲料", "零食", "3C", "文具", "其他" });
@@ -82,6 +84,17 @@ public partial class productForm : Form
             DataPropertyName = "Category",
             Width = 80
         });
+        dgvProducts.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "colIsActive",
+            HeaderText = "狀態",
+            DataPropertyName = "IsActive",
+            Width = 70,
+            DefaultCellStyle = new DataGridViewCellStyle
+            {
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            }
+        });
 
         dgvProducts.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         dgvProducts.ReadOnly = true;
@@ -91,11 +104,14 @@ public partial class productForm : Form
         btnAdd.Click += btnAdd_Click;
         btnUpdate.Click += btnUpdate_Click;
         btnDelete.Click += btnDelete_Click;
+        btnActivate.Click += btnActivate_Click;
+        btnExportExcel.Click += btnExportExcel_Click;
         //btnLogout.Click += btnLogout_Click;
         btnLogout.Visible = false;   // 登出改由主選單負責
         btnClear.Click += (s, e) => ClearInputs();
         btnStats.Click += btnStats_Click;
         dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
+        dgvProducts.CellFormatting += DgvProducts_CellFormatting;
         txtSearch.TextChanged += txtSearch_TextChanged;
     }
 
@@ -112,6 +128,7 @@ public partial class productForm : Form
                 _products.Add(p);
 
             lblStatus.Text = $"共 {_products.Count} 筆商品";
+            UpdateActiveButtons();   // ← 載入後依第一筆狀態更新按鈕
         }
         catch (HttpRequestException)
         {
@@ -125,6 +142,16 @@ public partial class productForm : Form
         finally
         {
             SetLoading(false);
+        }
+    }
+
+    // ── 把 IsActive 的 True/False 顯示成「啟用/停用」──
+    private void DgvProducts_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (dgvProducts.Columns[e.ColumnIndex].Name == "colIsActive" && e.Value is bool isActive)
+        {
+            e.Value = isActive ? "啟用" : "停用";
+            e.FormattingApplied = true;
         }
     }
 
@@ -230,6 +257,52 @@ public partial class productForm : Form
             SetLoading(false);
         }
     }
+
+    // ── 啟用商品 ──────────────────────────────────────
+    // ── 啟用商品 ──────────────────────────────────────
+    private async void btnActivate_Click(object? sender, EventArgs e)
+    {
+        if (_bindingSource.Current is not ProductDto selected) return;
+
+        var confirm = MessageBox.Show(
+            $"確定要啟用「{selected.Name}」嗎？\n（啟用後將重新顯示於新增單據的選單中）",
+            "啟用確認",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirm != DialogResult.Yes) return;
+
+        SetLoading(true);
+        try
+        {
+            var (success, message) = await _api.ActivateProductAsync(selected.Id);
+
+            if (success)
+            {
+                lblStatus.Text = $"✅ 已啟用：{selected.Name}";
+                await LoadProductsAsync();
+            }
+            else
+            {
+                MessageBox.Show(message, "啟用失敗",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+        catch (InvalidOperationException ex)   // 403 沒權限
+        {
+            MessageBox.Show(ex.Message, "權限不足",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (UnauthorizedAccessException)    // 401 登入過期
+        {
+            MessageBox.Show("登入已過期，請重新登入。", "提示",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            SetLoading(false);
+        }
+    }
     // ── 選取列時填回輸入欄位 ──────────────────────────
     private void dgvProducts_SelectionChanged(object? sender, EventArgs e)
     {
@@ -239,6 +312,27 @@ public partial class productForm : Form
         txtPrice.Text = p.Price.ToString();
         txtStock.Text = p.Stock.ToString();
         cboCategory.SelectedItem = p.Category;
+        UpdateActiveButtons();   // ← 新增：選擇變動時更新停用/啟用鈕狀態
+    }
+    // ── 依選中商品狀態 + Admin 權限，切換停用/啟用鈕可用性 ──
+    private void UpdateActiveButtons()
+    {
+        bool isAdmin = AppSession.IsAdmin;
+
+        if (_bindingSource.Current is ProductDto selected)
+        {
+            // 除錯用，確認後刪掉
+            System.Diagnostics.Debug.WriteLine($"[UpdateActiveButtons] 選中={selected.Name}, IsActive={selected.IsActive}, Admin={isAdmin}");
+
+            // 必須是 Admin，且：啟用中→可停用、停用中→可啟用
+            btnDelete.Enabled = isAdmin && selected.IsActive;    // 停用鈕
+            btnActivate.Enabled = isAdmin && !selected.IsActive;   // 啟用鈕
+        }
+        else
+        {
+            btnDelete.Enabled = false;
+            btnActivate.Enabled = false;
+        }
     }
 
     // ── 即時搜尋 ──────────────────────────────────────
@@ -319,8 +413,19 @@ public partial class productForm : Form
     {
         btnAdd.Enabled = !isLoading;
         btnUpdate.Enabled = !isLoading;
-        btnDelete.Enabled = !isLoading && AppSession.IsAdmin;
         Cursor = isLoading ? Cursors.WaitCursor : Cursors.Default;
+
+        if (isLoading)
+        {
+            // 載入中：停用/啟用鈕都鎖住
+            btnDelete.Enabled = false;
+            btnActivate.Enabled = false;
+        }
+        else
+        {
+            // 載入完成：交給 UpdateActiveButtons 依「權限+商品狀態」決定
+            UpdateActiveButtons();
+        }
     }
 
     private void RedirectToLogin()
@@ -357,5 +462,49 @@ public partial class productForm : Form
         """;
 
         MessageBox.Show(msg, "商品統計", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+    // ── 匯出商品庫存表 Excel ──────────────────────────
+    private void btnExportExcel_Click(object? sender, EventArgs e)
+    {
+        if (_products.Count == 0)
+        {
+            MessageBox.Show("目前沒有商品資料可匯出。", "提示");
+            return;
+        }
+
+        using var sfd = new SaveFileDialog
+        {
+            Filter = "Excel 檔案|*.xlsx",
+            FileName = $"商品庫存表_{DateTime.Now:yyyyMMdd}.xlsx"
+        };
+
+        if (sfd.ShowDialog() != DialogResult.OK) return;
+
+        try
+        {
+            ExcelExportService.ExportProducts(_products.ToList(), sfd.FileName);
+            ShowExportSuccess(sfd.FileName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"匯出失敗：{ex.Message}", "錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    // ── 共用：匯出成功後詢問是否開啟檔案 ──────────────
+    private void ShowExportSuccess(string filePath)
+    {
+        var open = MessageBox.Show("匯出成功！是否立即開啟檔案？", "完成",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+        if (open == DialogResult.Yes)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true   // 用系統預設程式（Excel）開啟
+            });
+        }
     }
 }

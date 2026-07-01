@@ -10,6 +10,7 @@ public class ProductDto
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public string Category { get; set; } = "";
+    public bool IsActive { get; set; }     // ← 新增
 }
 
 // 新增時前端傳入的資料（不含 Id，因為 Id 由資料庫產生）

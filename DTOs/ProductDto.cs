@@ -8,6 +8,7 @@ public class ProductDto
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public string Category { get; set; } = "";
+    public bool IsActive { get; set; }     // ← 新增
 }
 
 public class CreateProductDto
