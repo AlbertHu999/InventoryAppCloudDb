@@ -20,6 +20,7 @@ public partial class MainForm : Form
         mnuPurchase.Click += (_, _) => OpenForm<PurchaseForm>(() => new PurchaseForm());
         mnuSales.Click += (_, _) => OpenForm<SalesForm>(() => new SalesForm());
         mnuLedger.Click += (_, _) => OpenForm<InventoryLedgerForm>(() => new InventoryLedgerForm());
+        mnuImport.Click += (_, _) => OpenForm<ImportForm>(() => new ImportForm(_api));
         mnuLogout.Click += MnuLogout_Click;
         mnuExit.Click += (_, _) => Application.Exit();
 

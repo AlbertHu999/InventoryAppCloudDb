@@ -193,6 +193,7 @@ public class ApiService
     {
         var response = await SendAsync(() => _http.PostAsync($"{_baseUrl}/api/sales", ToJson(dto)));
         var json = await response.Content.ReadAsStringAsync();
+
         var result = JsonSerializer.Deserialize<ServiceResultJson<SalesOrderDto>>(json, _jsonOpt);
         return response.IsSuccessStatusCode
             ? (true, result?.Message ?? "銷貨單建立成功")
