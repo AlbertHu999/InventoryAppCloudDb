@@ -268,3 +268,7 @@ Authorization: Bearer c8087ac693f54398a047e800c7323697
   ]
 }
 
+
+### 測試銷貨單報表
+GET {{baseUrl}}/api/reports/sales/13
+Authorization: Bearer b6a925140164487bb7cefd3c387c7ba8

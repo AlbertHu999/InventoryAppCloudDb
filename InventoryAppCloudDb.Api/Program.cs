@@ -29,6 +29,15 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// ── QuestPDF 授權宣告 + 中文字型註冊 ──────────────────
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+var fontPath = Path.Combine(AppContext.BaseDirectory, "Fonts", "NotoSansTC-Regular.ttf");
+using (var fontStream = File.OpenRead(fontPath))
+{
+    QuestPDF.Drawing.FontManager.RegisterFontWithCustomName("NotoSansTC", fontStream);
+}
+
 // ── Middleware ───────────────────
 if (app.Environment.IsDevelopment())
 {
@@ -242,6 +251,24 @@ app.MapGet("/api/inventory-ledgers/product/{productId:int}", async (
     return Results.Ok(result);
 }).WithTags("庫存流水帳");
 
+// ════════════════════════════════════════════════════════
+//  報表
+// ════════════════════════════════════════════════════════
+
+app.MapGet("/api/reports/sales/{id:int}", async (int id, ISalesService svc) =>
+{
+    var result = await svc.GetByIdAsync(id);
+    if (!result.Success || result.Data == null)
+        return Results.NotFound(result);
+
+    var pdfBytes = InventoryAppCloudDb.Api.Services.Reports.SalesOrderPdfService.Generate(result.Data);
+
+    return Results.File(
+        pdfBytes,
+        contentType: "application/pdf",
+        fileDownloadName: $"銷貨單_{result.Data.Id}.pdf");
+})
+.WithTags("報表");
 
 // ════════════════════════════════════════════════════════
 //  驗證

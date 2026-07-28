@@ -33,6 +33,7 @@ public partial class SalesForm : Form
         btnNew.Click += BtnNew_Click;
         btnCancel.Click += BtnCancel_Click;
         btnVoid.Click += async (_, _) => await BtnVoid_ClickAsync();
+        btnPrintReport.Click += async (_, _) => await BtnPrintReport_ClickAsync();
         dgvOrders.SelectionChanged += DgvOrders_SelectionChanged;
 
         SetMode(FormMode.Initial);
@@ -225,6 +226,49 @@ public partial class SalesForm : Form
             MessageBox.Show(ex.Message, "權限不足", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
+
+    // ── 列印銷貨單 PDF ────────────────────────────────
+    private async Task BtnPrintReport_ClickAsync()
+    {
+        var idx = dgvOrders.CurrentRow?.Index ?? -1;
+        if (idx < 0 || idx >= _orders.Count)
+        {
+            MessageBox.Show("請先選擇一張銷貨單。", "提示");
+            return;
+        }
+
+        var order = _orders[idx];
+
+        try
+        {
+            btnPrintReport.Enabled = false;
+
+            var pdfBytes = await _api.GetSalesOrderPdfAsync(order.Id);
+
+            var tempPath = Path.Combine(Path.GetTempPath(), $"銷貨單_{order.Id}.pdf");
+            await File.WriteAllBytesAsync(tempPath, pdfBytes);
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = tempPath,
+                UseShellExecute = true
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show("登入已過期，請重新登入。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"產生報表失敗：{ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            btnPrintReport.Enabled = true;
+        }
+    }
+
+
     // ── 匯出銷貨明細 Excel ────────────────────────────
     private void btnExportExcel_Click(object? sender, EventArgs e)
     {

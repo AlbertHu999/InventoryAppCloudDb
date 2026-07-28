@@ -199,6 +199,21 @@ public class ApiService
             ? (true, result?.Message ?? "銷貨單建立成功")
             : (false, result?.Message ?? "銷貨單建立失敗");
     }
+
+    // ════════════════════════════════════════════════════════
+    //  報表
+    // ════════════════════════════════════════════════════════
+
+    // ── 取得銷貨單 PDF（回傳原始 bytes，不走 ServiceResultJson 包裝）──
+    public async Task<byte[]> GetSalesOrderPdfAsync(int id)
+    {
+        var response = await SendAsync(() =>
+            _http.GetAsync($"{_baseUrl}/api/reports/sales/{id}"));
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
     // ── 私有：對應 API 的 ServiceResult<T> JSON 結構 ─
     private class ServiceResultJson<T>
     {
