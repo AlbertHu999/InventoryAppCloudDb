@@ -270,6 +270,35 @@ app.MapGet("/api/reports/sales/{id:int}", async (int id, ISalesService svc) =>
 })
 .WithTags("報表");
 
+app.MapGet("/api/reports/products", async (IProductService svc) =>
+{
+    var result = await svc.GetAllAsync();
+    if (!result.Success) return Results.BadRequest(result);
+
+    var pdfBytes = InventoryAppCloudDb.Api.Services.Reports.ProductPdfService.Generate(result.Data!);
+    return Results.File(pdfBytes, "application/pdf", "商品庫存表.pdf");
+})
+.WithTags("報表");
+
+app.MapGet("/api/reports/purchases/{id:int}", async (int id, IPurchaseService svc) =>
+{
+    var result = await svc.GetByIdAsync(id);
+    if (!result.Success) return Results.NotFound(result);
+
+    var pdfBytes = InventoryAppCloudDb.Api.Services.Reports.PurchaseOrderPdfService.Generate(result.Data!);
+    return Results.File(pdfBytes, "application/pdf", $"進貨單_{id}.pdf");
+})
+.WithTags("報表");
+app.MapGet("/api/reports/inventory-ledgers", async (IInventoryService svc) =>
+{
+    var result = await svc.GetAllAsync();
+    if (!result.Success) return Results.BadRequest(result);
+
+    var pdfBytes = InventoryAppCloudDb.Api.Services.Reports.InventoryLedgerPdfService.Generate(result.Data!);
+    return Results.File(pdfBytes, "application/pdf", "庫存異動明細表.pdf");
+})
+.WithTags("報表");
+
 // ════════════════════════════════════════════════════════
 //  驗證
 // ════════════════════════════════════════════════════════

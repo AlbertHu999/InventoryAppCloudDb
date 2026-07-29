@@ -33,6 +33,7 @@ public partial class PurchaseForm : Form
         btnCancel.Click += BtnCancel_Click;
         btnVoid.Click += async (_, _) => await BtnVoid_ClickAsync();
         btnExportExcel.Click += btnExportExcel_Click;
+        btnPrintReport.Click += async (_, _) => await BtnPrintReport_ClickAsync();
         dgvOrders.SelectionChanged += DgvOrders_SelectionChanged;
 
         SetMode(FormMode.Initial);
@@ -259,6 +260,38 @@ public partial class PurchaseForm : Form
         {
             MessageBox.Show($"匯出失敗：{ex.Message}", "錯誤",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    // ── 列印進貨單 PDF ────────────────────────────────
+    private async Task BtnPrintReport_ClickAsync()
+    {
+        var idx = dgvOrders.CurrentRow?.Index ?? -1;
+        if (idx < 0 || idx >= _orders.Count)
+        {
+            MessageBox.Show("請先選擇一張進貨單。", "提示");
+            return;
+        }
+
+        var order = _orders[idx];
+
+        try
+        {
+            btnPrintReport.Enabled = false;
+            var pdfBytes = await _api.GetPurchaseOrderPdfAsync(order.Id);
+            PdfViewerHelper.SaveAndOpen(pdfBytes, $"進貨單_{order.Id}.pdf");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show("登入已過期，請重新登入。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"產生報表失敗：{ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            btnPrintReport.Enabled = true;
         }
     }
 

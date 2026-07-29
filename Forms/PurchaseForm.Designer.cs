@@ -95,6 +95,13 @@ partial class PurchaseForm
             Size = new Size(100, 28)
         };
 
+        btnPrintReport = new Button
+        {
+            Text = "列印進貨單",
+            Location = new Point(230, 15),
+            Size = new Size(110, 28)
+        };
+
         // ── 備註 ──
         lblNote = new Label { Text = "備註：", Location = new Point(590, 215), AutoSize = true };
         txtNote = new TextBox { Location = new Point(660, 212), Width = 200 };
@@ -140,7 +147,7 @@ partial class PurchaseForm
 
         Controls.AddRange(new Control[]
                 {
-            dgvOrders, btnRefresh, btnExportExcel,
+            dgvOrders, btnRefresh, btnExportExcel, btnPrintReport,
             lblSupplier, txtSupplier,
             lblNote, txtNote,
             lblDetail,
@@ -159,5 +166,5 @@ partial class PurchaseForm
     private Label lblSupplier, lblNote, lblDetail, lblProduct, lblQty, lblCost;
     private TextBox txtSupplier, txtNote, txtQty, txtCost;
     private ComboBox cboProduct;
-    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid, btnExportExcel;
+    private Button btnAddDetail, btnRemoveDetail, btnCreate, btnRefresh, btnNew, btnCancel, btnVoid, btnExportExcel, btnPrintReport;
 }

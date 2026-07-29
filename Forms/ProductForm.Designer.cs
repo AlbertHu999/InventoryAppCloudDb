@@ -49,6 +49,7 @@
         btnStats = new Button();
         lblUser = new Label();
         btnLogout = new Button();
+        btnPrintReport = new Button();
         ((System.ComponentModel.ISupportInitialize)dgvProducts).BeginInit();
         SuspendLayout();
         // 
@@ -167,6 +168,7 @@
         btnExportExcel.Location = new Point(564, 145);
         btnExportExcel.Name = "btnExportExcel";
         btnExportExcel.Size = new Size(90, 23);
+        btnExportExcel.TabIndex = 19;
         btnExportExcel.Text = "匯出 Excel";
         btnExportExcel.UseVisualStyleBackColor = true;
         // 
@@ -231,11 +233,21 @@
         btnLogout.Text = "登出";
         btnLogout.UseVisualStyleBackColor = true;
         // 
+        // btnPrintReport
+        // 
+        btnPrintReport.Location = new Point(564, 181);
+        btnPrintReport.Name = "btnPrintReport";
+        btnPrintReport.Size = new Size(75, 23);
+        btnPrintReport.TabIndex = 20;
+        btnPrintReport.Text = "列印報表";
+        btnPrintReport.UseVisualStyleBackColor = true;
+        // 
         // productForm
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(871, 561);
+        Controls.Add(btnPrintReport);
         Controls.Add(btnLogout);
         Controls.Add(lblUser);
         Controls.Add(btnStats);
@@ -278,8 +290,8 @@
         private Button btnUpdate;
         private Button btnDelete;
         private Button btnActivate;
-          private Button btnExportExcel;
-          private Button btnClear;
+        private Button btnExportExcel;
+        private Button btnClear;
         private Label label5;
         private TextBox txtSearch;
         private DataGridView dgvProducts;
@@ -287,5 +299,6 @@
         private Button btnStats;
         private Label lblUser;
         private Button btnLogout;
-    }
+        private Button btnPrintReport;
+}
 

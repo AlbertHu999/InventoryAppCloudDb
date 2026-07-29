@@ -214,6 +214,33 @@ public class ApiService
         return await response.Content.ReadAsByteArrayAsync();
     }
 
+    // ── 商品庫存表 PDF ──
+    public async Task<byte[]> GetProductReportPdfAsync()
+    {
+        var response = await SendAsync(() =>
+            _http.GetAsync($"{_baseUrl}/api/reports/products"));
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    // ── 進貨單 PDF ──
+    public async Task<byte[]> GetPurchaseOrderPdfAsync(int id)
+    {
+        var response = await SendAsync(() =>
+            _http.GetAsync($"{_baseUrl}/api/reports/purchases/{id}"));
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    // ── 庫存流水帳 PDF ──
+    public async Task<byte[]> GetInventoryLedgerReportPdfAsync()
+    {
+        var response = await SendAsync(() =>
+            _http.GetAsync($"{_baseUrl}/api/reports/inventory-ledgers"));
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
     // ── 私有：對應 API 的 ServiceResult<T> JSON 結構 ─
     private class ServiceResultJson<T>
     {

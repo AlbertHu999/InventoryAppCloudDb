@@ -110,6 +110,7 @@ public partial class productForm : Form
         btnLogout.Visible = false;   // 登出改由主選單負責
         btnClear.Click += (s, e) => ClearInputs();
         btnStats.Click += btnStats_Click;
+        btnPrintReport.Click += btnPrintReport_Click;
         dgvProducts.SelectionChanged += dgvProducts_SelectionChanged;
         dgvProducts.CellFormatting += DgvProducts_CellFormatting;
         txtSearch.TextChanged += txtSearch_TextChanged;
@@ -489,6 +490,30 @@ public partial class productForm : Form
         {
             MessageBox.Show($"匯出失敗：{ex.Message}", "錯誤",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    // ── 列印商品庫存表 PDF ────────────────────────────
+    private async void btnPrintReport_Click(object? sender, EventArgs e)
+    {
+        try
+        {
+            SetLoading(true);
+            var pdfBytes = await _api.GetProductReportPdfAsync();
+            PdfViewerHelper.SaveAndOpen(pdfBytes, $"商品庫存表_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            RedirectToLogin();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"產生報表失敗：{ex.Message}", "錯誤",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            SetLoading(false);
         }
     }
 

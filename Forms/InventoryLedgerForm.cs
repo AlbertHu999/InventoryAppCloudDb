@@ -12,6 +12,7 @@ public partial class InventoryLedgerForm : Form
         InitializeComponent();
         SetupGrid();
         btnRefresh.Click += async (_, _) => await LoadDataAsync();
+        btnPrintReport.Click += async (_, _) => await BtnPrintReport_ClickAsync();
         Load += async (_, _) => await LoadDataAsync();
     }
 
@@ -61,6 +62,29 @@ public partial class InventoryLedgerForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"載入失敗：{ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    // ── 列印庫存流水帳 PDF ────────────────────────────
+    private async Task BtnPrintReport_ClickAsync()
+    {
+        try
+        {
+            btnPrintReport.Enabled = false;
+            var pdfBytes = await _api.GetInventoryLedgerReportPdfAsync();
+            PdfViewerHelper.SaveAndOpen(pdfBytes, $"庫存異動明細表_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show("登入已過期，請重新登入。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"產生報表失敗：{ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            btnPrintReport.Enabled = true;
         }
     }
 }
