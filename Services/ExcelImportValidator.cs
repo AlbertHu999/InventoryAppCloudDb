@@ -15,8 +15,10 @@ public static class ExcelImportValidator
 {
     // ── 驗證並轉換「商品」Sheet ─────────────────────────
     // 預期欄位：商品名稱、售價、庫存、分類
+    // ── 驗證並轉換「商品」Sheet ─────────────────────────
+    // 預期欄位：商品名稱、售價、庫存、分類
     public static ImportValidationResult<CreateProductDto> ValidateProducts(
-            DataTable dt, List<ProductDto> existingProducts)
+            DataTable dt, List<ProductDto> allExistingProducts)   // ← 參數名稱改清楚：全部商品（含停用）
     {
         var result = new ImportValidationResult<CreateProductDto>();
 
@@ -32,9 +34,16 @@ public static class ExcelImportValidator
             if (string.IsNullOrEmpty(name))
                 errors.Add("商品名稱不可空白");
 
-            // ── 新增：檢查同名商品是否已存在 ──
-            else if (existingProducts.Any(p => p.Name == name))
-                errors.Add($"商品名稱「{name}」已存在，略過（如需修改請至商品管理編輯）");
+            // ── 用「全部商品」（含停用）判斷是否重複，不受啟用狀態影響 ──
+            else
+            {
+                var duplicate = allExistingProducts.FirstOrDefault(p => p.Name == name);
+                if (duplicate != null)
+                {
+                    var statusText = duplicate.IsActive ? "啟用中" : "已停用";
+                    errors.Add($"商品名稱「{name}」已存在（狀態：{statusText}），略過此列，如需修改請至商品管理編輯");
+                }
+            }
 
             var priceText = row.Table.Columns.Contains("售價") ? row["售價"]?.ToString() : null;
             if (!decimal.TryParse(priceText, out var price) || price < 0)

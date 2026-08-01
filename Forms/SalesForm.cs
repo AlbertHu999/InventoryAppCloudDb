@@ -160,6 +160,19 @@ public partial class SalesForm : Form
         foreach (var d in order.Details)
             _details.Add(new CreateSalesDetailDto { ProductId = d.ProductId, Quantity = d.Quantity, UnitPrice = d.UnitPrice });
 
+        // ✅ 新增：同步下拉選單顯示，避免殘留上一次選擇的商品
+        // 查看模式下 cboProduct 本身是停用狀態，這裡純粹是「顯示」用途，不影響資料寫入
+        if (order.Details.Count > 0)
+        {
+            var firstProductId = order.Details[0].ProductId;
+            var matchedProduct = _products.FirstOrDefault(p => p.Id == firstProductId);
+            cboProduct.SelectedItem = matchedProduct;   // 找不到（例如商品已停用）就是 null，顯示空白
+        }
+        else
+        {
+            cboProduct.SelectedItem = null;
+        }
+
         SetMode(FormMode.Viewing);
     }
 

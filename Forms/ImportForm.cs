@@ -20,6 +20,7 @@ public partial class ImportForm : Form
         btnProcess.Click += async (_, _) => await ProcessAllSheetsAsync();
     }
     // ── 驗證並批次匯入所有 Sheet ────────────────────────
+    // ── 驗證並批次匯入所有 Sheet ────────────────────────
     private async Task ProcessAllSheetsAsync()
     {
         btnProcess.Enabled = false;
@@ -27,8 +28,11 @@ public partial class ImportForm : Form
 
         try
         {
-            // 進貨/銷貨需要對照商品名稱找 ProductId，先載入目前系統的啟用商品
-            var existingProducts = await _api.GetActiveProductsAsync();
+            // ⚠️ 兩份不同用途的商品清單，語意不同，不要合併成一份：
+            // - allProducts：含停用商品，用於「商品」Sheet 判斷是否已存在重複
+            // - activeProducts：只含啟用商品，用於「進貨/銷貨」Sheet 對照可用商品
+            var allProducts = await _api.GetProductsAsync();
+            var activeProducts = await _api.GetActiveProductsAsync();
 
             foreach (var (sheetName, dt) in _sheetData)
             {
@@ -37,7 +41,7 @@ public partial class ImportForm : Form
 
                 if (sheetName.Contains("商品"))
                 {
-                    var result = ExcelImportValidator.ValidateProducts(dt, existingProducts);
+                    var result = ExcelImportValidator.ValidateProducts(dt, allProducts);
                     reportLines.Add($"【{sheetName}】驗證通過 {result.ValidItems.Count} 筆，錯誤 {result.Errors.Count} 筆");
                     reportLines.AddRange(result.Errors);
 
@@ -55,7 +59,7 @@ public partial class ImportForm : Form
                 }
                 else if (sheetName.Contains("進貨"))
                 {
-                    var result = ExcelImportValidator.ValidatePurchases(dt, existingProducts);
+                    var result = ExcelImportValidator.ValidatePurchases(dt, activeProducts);
                     reportLines.Add($"【{sheetName}】驗證通過 {result.ValidItems.Count} 筆，錯誤 {result.Errors.Count} 筆");
                     reportLines.AddRange(result.Errors);
 
@@ -72,7 +76,7 @@ public partial class ImportForm : Form
                 }
                 else if (sheetName.Contains("銷貨"))
                 {
-                    var result = ExcelImportValidator.ValidateSales(dt, existingProducts);
+                    var result = ExcelImportValidator.ValidateSales(dt, activeProducts);
                     reportLines.Add($"【{sheetName}】驗證通過 {result.ValidItems.Count} 筆，錯誤 {result.Errors.Count} 筆");
                     reportLines.AddRange(result.Errors);
 
@@ -117,6 +121,10 @@ public partial class ImportForm : Form
             btnProcess.Enabled = true;
         }
     }
+
+
+
+
     // ── 匯入成功後清空該 Sheet 的資料列，避免重複送出同一批 ──
     private void ClearSheetAfterImport(string sheetName, DataTable dt)
     {

@@ -152,7 +152,7 @@ public partial class PurchaseForm : Form
     // ── 點列表：進入查看模式（唯讀顯示明細）──────────
     private void DgvOrders_SelectionChanged(object? sender, EventArgs e)
     {
-        if (_mode == FormMode.Creating) return;   // 新增中不受列表點選影響
+        if (_mode == FormMode.Creating) return;
 
         if (dgvOrders.CurrentRow == null) return;
         var rowIndex = dgvOrders.CurrentRow.Index;
@@ -166,9 +166,20 @@ public partial class PurchaseForm : Form
         foreach (var d in order.Details)
             _details.Add(new CreatePurchaseDetailDto { ProductId = d.ProductId, Quantity = d.Quantity, UnitPrice = d.UnitPrice });
 
+        // ✅ 新增：同步下拉選單顯示，避免殘留上一次選擇的商品
+        if (order.Details.Count > 0)
+        {
+            var firstProductId = order.Details[0].ProductId;
+            var matchedProduct = _products.FirstOrDefault(p => p.Id == firstProductId);
+            cboProduct.SelectedItem = matchedProduct;
+        }
+        else
+        {
+            cboProduct.SelectedItem = null;
+        }
+
         SetMode(FormMode.Viewing);
     }
-
     // ── 儲存（建立進貨單，只在 Creating 模式）────────
     private async Task BtnSave_ClickAsync()
     {
