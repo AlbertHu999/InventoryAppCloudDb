@@ -4,9 +4,17 @@ using InventoryAppCloudDb.Api.Models;
 using InventoryAppCloudDb.Api.Repositories;
 using InventoryAppCloudDb.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
+// ── Serilog 初始化：必須在 builder 建立之前，才能捕捉到最早期的啟動錯誤 ──
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .Enrich.FromLogContext()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();   // ← 新增：取代預設的 Logging，改用 Serilog
 
 // ===== DI 登記（告訴系統：需要什麼服務，就給什麼實作）=====
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -44,20 +52,26 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
-app.UseMiddleware<TokenAuthMiddleware>();
 
-// ── 全域例外處理 ──────────────────────────────────────
+// ── 全域例外處理：必須放在最前面，包住後面所有中介軟體 ──
 app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
     ctx.Response.StatusCode = 500;
     ctx.Response.ContentType = "application/json";
-    var error = ctx.Features
-        .Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-    await ctx.Response.WriteAsJsonAsync(
-        ServiceResult.Fail(error?.Error.Message ?? "伺服器發生未知錯誤")
-    );
+
+    var error = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+    var message = app.Environment.IsDevelopment()
+        ? error?.Error.Message ?? "伺服器發生未知錯誤"
+        : "系統發生錯誤，請稍後再試或聯繫管理員";
+
+    await ctx.Response.WriteAsJsonAsync(ServiceResult.Fail(message));
 }));
+
+app.UseHttpsRedirection();
+app.UseMiddleware<TokenAuthMiddleware>();
+
+
 
 // ════════════════════════════════════════════════════════
 //  商品管理
@@ -175,23 +189,37 @@ app.MapGet("/api/purchases/{id:int}", async (int id, IPurchaseService svc) =>
 }).WithTags("進貨管理");
 
 app.MapPost("/api/purchases", async (
-    CreatePurchaseOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
+    CreatePurchaseOrderDto dto, IPurchaseService svc, HttpContext ctx, ILogger<Program> logger) =>
 {
     var createdBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.CreateAsync(dto, createdBy);
+
+    if (result.Success)
+        logger.LogInformation("進貨單建立成功 Id={Id} 供應商={Supplier} 建立者={CreatedBy}",
+            result.Data!.Id, dto.Supplier, createdBy);
+    else
+        logger.LogWarning("進貨單建立失敗 供應商={Supplier} 原因={Message} 操作者={CreatedBy}",
+            dto.Supplier, result.Message, createdBy);
+
     return result.Success
         ? Results.Created($"/api/purchases/{result.Data!.Id}", result)
         : Results.BadRequest(result);
 }).WithTags("進貨管理");
 
 // POST /api/purchases/1/void — 作廢進貨單（Phase 5.5）
-app.MapPost("/api/purchases/{id:int}/void", async (int id, VoidOrderDto dto, IPurchaseService svc, HttpContext ctx) =>
+app.MapPost("/api/purchases/{id:int}/void", async (int id, VoidOrderDto dto, IPurchaseService svc, HttpContext ctx, ILogger<Program> logger) =>
 {
     if (!ctx.IsAdmin())
         return Results.Json(ServiceResult.Fail("僅管理員可作廢單據"), statusCode: 403);
 
     var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
+
+    if (result.Success)
+        logger.LogInformation("進貨單作廢成功 Id={Id} 原因={Reason} 操作者={VoidedBy}", id, dto.Reason, voidedBy);
+    else
+        logger.LogWarning("進貨單作廢失敗 Id={Id} 原因={Message} 操作者={VoidedBy}", id, result.Message, voidedBy);
+
     return result.Success ? Results.Ok(result) : Results.BadRequest(result);
 })
 .WithTags("進貨管理");
@@ -213,23 +241,37 @@ app.MapGet("/api/sales/{id:int}", async (int id, ISalesService svc) =>
 }).WithTags("銷貨管理");
 
 app.MapPost("/api/sales", async (
-    CreateSalesOrderDto dto, ISalesService svc, HttpContext ctx) =>
+    CreateSalesOrderDto dto, ISalesService svc, HttpContext ctx, ILogger<Program> logger) =>
 {
     var createdBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.CreateAsync(dto, createdBy);
+
+    if (result.Success)
+        logger.LogInformation("銷貨單建立成功 Id={Id} 建立者={CreatedBy}",
+            result.Data!.Id, createdBy);
+    else
+        logger.LogWarning("銷貨單建立失敗 原因={Message} 操作者={CreatedBy}",
+            result.Message, createdBy);
+
     return result.Success
         ? Results.Created($"/api/sales/{result.Data!.Id}", result)
         : Results.BadRequest(result);
 }).WithTags("銷貨管理");
 
 // POST /api/sales/1/void — 作廢銷貨單（Phase 5.5）
-app.MapPost("/api/sales/{id:int}/void", async (int id, VoidOrderDto dto, ISalesService svc, HttpContext ctx) =>
+app.MapPost("/api/sales/{id:int}/void", async (int id, VoidOrderDto dto, ISalesService svc, HttpContext ctx, ILogger<Program> logger) =>
 {
     if (!ctx.IsAdmin())
         return Results.Json(ServiceResult.Fail("僅管理員可作廢單據"), statusCode: 403);
 
     var voidedBy = ctx.Items["Username"]?.ToString() ?? "";
     var result = await svc.VoidAsync(id, dto.Reason ?? "", voidedBy);
+
+    if (result.Success)
+        logger.LogInformation("銷貨單作廢成功 Id={Id} 原因={Reason} 操作者={VoidedBy}", id, dto.Reason, voidedBy);
+    else
+        logger.LogWarning("銷貨單作廢失敗 Id={Id} 原因={Message} 操作者={VoidedBy}", id, result.Message, voidedBy);
+
     return result.Success ? Results.Ok(result) : Results.BadRequest(result);
 })
 .WithTags("銷貨管理");
@@ -303,9 +345,15 @@ app.MapGet("/api/reports/inventory-ledgers", async (IInventoryService svc) =>
 //  驗證
 // ════════════════════════════════════════════════════════
 
-app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc) =>
+app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc, ILogger<Program> logger) =>
 {
     var result = await svc.LoginAsync(dto.Username, dto.Password);
+
+    if (result.Success)
+        logger.LogInformation("登入成功 使用者={Username}", dto.Username);
+    else
+        logger.LogWarning("登入失敗 使用者={Username}", dto.Username);
+
     return result.Success
         ? Results.Ok(result)
         : Results.Unauthorized();
