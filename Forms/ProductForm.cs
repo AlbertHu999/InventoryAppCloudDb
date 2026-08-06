@@ -312,6 +312,8 @@ public partial class productForm : Form
         txtName.Text = p.Name;
         txtPrice.Text = p.Price.ToString();
         txtStock.Text = p.Stock.ToString();
+        txtStock.ReadOnly = true;                      // ✅ 新增：編輯情境鎖住庫存
+        txtStock.BackColor = SystemColors.Control;      // ✅ 新增：灰階視覺提示
         cboCategory.SelectedItem = p.Category;
         UpdateActiveButtons();   // ← 新增：選擇變動時更新停用/啟用鈕狀態
     }
@@ -406,6 +408,8 @@ public partial class productForm : Form
         txtName.Text = "";
         txtPrice.Text = "";
         txtStock.Text = "";
+        txtStock.ReadOnly = false;                      // ✅ 新增：新增情境開放輸入
+        txtStock.BackColor = SystemColors.Window;        // ✅ 新增：恢復白底
         cboCategory.SelectedIndex = 0;
         txtName.Focus();
     }

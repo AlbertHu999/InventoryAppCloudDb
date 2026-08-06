@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+	  <NoWarn>$(NoWarn);NU1903</NoWarn>
+	  <!-- ✅ 新增：暫時抑制 Microsoft.OpenApi 已知弱點警告 -->
   </PropertyGroup>
 
   <ItemGroup>

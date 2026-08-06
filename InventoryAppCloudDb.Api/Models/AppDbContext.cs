@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<SalesOrder> SalesOrders { get; set; }
     public DbSet<SalesOrderDetail> SalesOrderDetails { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }   // ← Phase 5.5 新增
+    public DbSet<ImportHistory> ImportHistories { get; set; }   // ✅ 新增
 
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
@@ -85,5 +86,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<SalesOrder>()
             .Property(o => o.Status)
             .HasDefaultValue("Posted");
+
+        // ── 技術債處理：ImportHistory 設定 ──
+        modelBuilder.Entity<ImportHistory>()
+            .Property(h => h.Id)
+            .UseIdentityAlwaysColumn();
+
+        modelBuilder.Entity<ImportHistory>()
+            .HasIndex(h => new { h.FileHash, h.SheetType });   // 查詢「這個雜湊值+類型是否匯入過」會用到，建複合索引
     }
 }

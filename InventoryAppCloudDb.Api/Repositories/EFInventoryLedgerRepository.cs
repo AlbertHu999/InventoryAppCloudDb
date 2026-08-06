@@ -25,6 +25,7 @@ public class EFInventoryLedgerRepository : IInventoryLedgerRepository
 
     public async Task<List<InventoryLedger>> GetByProductIdAsync(int productId)
         => await _ctx.InventoryLedgers
+            .Include(l => l.Product)
             .Where(l => l.ProductId == productId)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();

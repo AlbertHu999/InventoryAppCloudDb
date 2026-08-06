@@ -315,4 +315,30 @@ public class ApiService
         var result = JsonSerializer.Deserialize<ServiceResultJson<List<InventoryLedgerDto>>>(json, _jsonOpt);
         return result?.Data ?? [];
     }
+    // ════════════════════════════════════════════════════════
+    //  技術債處理：Excel 匯入歷史（防重複匯入）
+    // ════════════════════════════════════════════════════════
+
+    // ── 檢查此檔案+類型是否已匯入過 ──────────────────
+    public async Task<ImportCheckResultDto> CheckImportHistoryAsync(string fileHash, string sheetType)
+    {
+        var dto = new { fileHash, sheetType };
+        var response = await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/import-history/check", ToJson(dto)));
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ServiceResultJson<ImportCheckResultDto>>(json, _jsonOpt);
+        return result?.Data ?? new ImportCheckResultDto { AlreadyImported = false };
+    }
+
+    // ── 記錄一筆匯入歷史 ──────────────────────────────
+    public async Task RecordImportHistoryAsync(string fileHash, string fileName, string sheetType)
+    {
+        var dto = new { fileHash, fileName, sheetType };
+        await SendAsync(() =>
+            _http.PostAsync($"{_baseUrl}/api/import-history/record", ToJson(dto)));
+        // 這裡不特別處理失敗情況——記錄失敗不應該讓整個匯入流程中斷，
+        // 頂多下次同一份檔案又被允許匯入一次，不影響資料正確性
+    }
+
 }

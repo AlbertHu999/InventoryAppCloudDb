@@ -32,6 +32,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IImportHistoryRepository, EFImportHistoryRepository>();
+builder.Services.AddScoped<IImportHistoryService, ImportHistoryService>();
+
 
 builder.Services.AddOpenApi();
 
@@ -121,8 +124,10 @@ app.MapPost("/api/products", async (CreateProductDto dto, IProductService svc, H
     if (!ctx.IsAdmin())
         return Results.Json(ServiceResult.Fail("僅管理員可新增商品"), statusCode: 403);
 
-    var result = await svc.CreateAsync(dto);
-    return result.Success
+    var createdBy = ctx.Items["Username"]?.ToString() ?? "";   // ✅ 新增
+    var result = await svc.CreateAsync(dto, createdBy);        // ✅ 修改：多傳一個參數
+
+        return result.Success
         ? Results.Created($"/api/products/{result.Data!.Id}", result)
         : Results.BadRequest(result);
 })
@@ -292,6 +297,25 @@ app.MapGet("/api/inventory-ledgers/product/{productId:int}", async (
     var result = await svc.GetByProductIdAsync(productId);
     return Results.Ok(result);
 }).WithTags("庫存流水帳");
+
+// ════════════════════════════════════════════════════════
+//  匯入歷史（防重複匯入）
+// ════════════════════════════════════════════════════════
+
+app.MapPost("/api/import-history/check", async (ImportCheckRequestDto dto, IImportHistoryService svc) =>
+{
+    var result = await svc.CheckAsync(dto);
+    return Results.Ok(result);
+})
+.WithTags("匯入歷史");
+
+app.MapPost("/api/import-history/record", async (ImportRecordDto dto, IImportHistoryService svc, HttpContext ctx) =>
+{
+    var importedBy = ctx.Items["Username"]?.ToString() ?? "";
+    var result = await svc.RecordAsync(dto, importedBy);
+    return Results.Ok(result);
+})
+.WithTags("匯入歷史");
 
 // ════════════════════════════════════════════════════════
 //  報表

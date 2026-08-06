@@ -104,13 +104,13 @@ public partial class PurchaseForm : Form
     // ── 新增：清空進入新增模式 ──────────────────────
     private void BtnNew_Click(object? sender, EventArgs e)
     {
+        SetMode(FormMode.Creating);
         txtSupplier.Clear();
         txtNote.Clear();
         txtQty.Clear();
         txtCost.Clear();
         _details.Clear();
         dgvOrders.ClearSelection();
-        SetMode(FormMode.Creating);
     }
 
     // ── 取消：捨棄變更回初始 ────────────────────────

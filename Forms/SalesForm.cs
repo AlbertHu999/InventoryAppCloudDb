@@ -101,13 +101,13 @@ public partial class SalesForm : Form
 
     private void BtnNew_Click(object? sender, EventArgs e)
     {
+        SetMode(FormMode.Creating);
         txtCustomer.Clear();
         txtNote.Clear();
         txtQty.Clear();
         txtPrice.Clear();
         _details.Clear();
         dgvOrders.ClearSelection();
-        SetMode(FormMode.Creating);
     }
 
     private void BtnCancel_Click(object? sender, EventArgs e)

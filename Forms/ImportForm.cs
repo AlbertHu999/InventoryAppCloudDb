@@ -34,10 +34,39 @@ public partial class ImportForm : Form
             var allProducts = await _api.GetProductsAsync();
             var activeProducts = await _api.GetActiveProductsAsync();
 
+            // ✅ 技術債處理：整份檔案只需算一次雜湊值，供各 Sheet 比對防重複匯入
+            var fileHash = ComputeFileHash(_filePath);
+
             foreach (var (sheetName, dt) in _sheetData)
             {
                 // DataGridView 綁定的是同一個 DataTable，
                 // 使用者在畫面上的編輯/刪除已經反映在 dt 裡了
+
+                // ✅ 技術債處理：判斷 Sheet 類型，用於防重複匯入比對與記錄
+                string sheetType = sheetName.Contains("商品") ? "商品"
+                                  : sheetName.Contains("進貨") ? "進貨"
+                                  : sheetName.Contains("銷貨") ? "銷貨"
+                                  : "";
+
+                // ✅ 技術債處理：檢查此檔案+類型是否已匯入過，若是則提醒使用者確認
+                if (!string.IsNullOrEmpty(sheetType))
+                {
+                    var checkResult = await _api.CheckImportHistoryAsync(fileHash, sheetType);
+                    if (checkResult.AlreadyImported)
+                    {
+                        var confirm = MessageBox.Show(
+                            $"【{sheetName}】此檔案先前已於 {checkResult.ImportedAt:yyyy/MM/dd HH:mm} 由 {checkResult.ImportedBy} 匯入過，是否仍要繼續匯入？",
+                            "重複匯入提醒",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Warning);
+
+                        if (confirm != DialogResult.Yes)
+                        {
+                            reportLines.Add($"【{sheetName}】偵測到重複匯入，使用者選擇取消，已略過");
+                            continue;   // 跳過這個 Sheet，繼續處理下一個
+                        }
+                    }
+                }
 
                 if (sheetName.Contains("商品"))
                 {
@@ -55,7 +84,11 @@ public partial class ImportForm : Form
 
                     // 成功匯入後，清空這個 Sheet 的資料，避免重複送出
                     if (successCount > 0)
+                    {
                         ClearSheetAfterImport(sheetName, dt);
+                        // ✅ 技術債處理：記錄這次匯入歷史，供之後防重複比對
+                        await _api.RecordImportHistoryAsync(fileHash, Path.GetFileName(_filePath), sheetType);
+                    }
                 }
                 else if (sheetName.Contains("進貨"))
                 {
@@ -72,7 +105,11 @@ public partial class ImportForm : Form
                     }
 
                     if (successCount > 0)
+                    {
                         ClearSheetAfterImport(sheetName, dt);
+                        // ✅ 技術債處理：記錄這次匯入歷史，供之後防重複比對
+                        await _api.RecordImportHistoryAsync(fileHash, Path.GetFileName(_filePath), sheetType);
+                    }
                 }
                 else if (sheetName.Contains("銷貨"))
                 {
@@ -94,7 +131,11 @@ public partial class ImportForm : Form
                         }
                     }
                     if (successCount > 0)
+                    {
                         ClearSheetAfterImport(sheetName, dt);
+                        // ✅ 技術債處理：記錄這次匯入歷史，供之後防重複比對
+                        await _api.RecordImportHistoryAsync(fileHash, Path.GetFileName(_filePath), sheetType);
+                    }
                 }
                 else
                 {
@@ -121,8 +162,6 @@ public partial class ImportForm : Form
             btnProcess.Enabled = true;
         }
     }
-
-
 
 
     // ── 匯入成功後清空該 Sheet 的資料列，避免重複送出同一批 ──
@@ -191,5 +230,13 @@ public partial class ImportForm : Form
 
         lblStatus.Text = $"已載入 {loadedCount} 個工作表";
         btnProcess.Enabled = loadedCount > 0;
+    }
+    // ── 計算檔案的 SHA256 雜湊值，用於防重複匯入比對 ──
+    private static string ComputeFileHash(string filePath)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        using var stream = File.OpenRead(filePath);
+        var hashBytes = sha256.ComputeHash(stream);
+        return Convert.ToHexString(hashBytes);   // 轉成十六進位字串，剛好 64 字元
     }
 }
