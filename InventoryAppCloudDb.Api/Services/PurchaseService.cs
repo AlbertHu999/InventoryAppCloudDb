@@ -62,10 +62,9 @@ public class PurchaseService : IPurchaseService
                 Note = dto.Note.Trim(),
                 CreatedBy = createdBy,
                 OrderDate = DateTime.UtcNow,
-                Status = "Posted",   // 雖然有 DEFAULT，這裡明確寫出更清楚
+                Status = "Posted",
             };
 
-            // ── 驗證階段：先把每筆明細的商品都檢查過 ──
             foreach (var d in dto.Details)
             {
                 var product = await _productRepo.GetByIdAsync(d.ProductId);
@@ -90,16 +89,13 @@ public class PurchaseService : IPurchaseService
                 });
             }
 
-            // ── 寫入主檔 + 明細（一次 Insert，EF Core 自動 cascade）──
             var newId = await _purchaseRepo.InsertAsync(order);
 
-            // ── 逐筆更新庫存 + 寫入 InventoryLedger ──
             var ledgers = new List<InventoryLedger>();
             foreach (var detail in order.Details)
             {
-                var product = await _productRepo.GetByIdAsync(detail.ProductId);
-                await _productRepo.UpdateStockAsync(
-                    detail.ProductId, product!.Stock + detail.Quantity);
+                // ✅ 入庫永遠安全，改用原子操作避免競態
+                await _productRepo.AdjustStockAsync(detail.ProductId, detail.Quantity);
 
                 ledgers.Add(new InventoryLedger
                 {
@@ -107,7 +103,7 @@ public class PurchaseService : IPurchaseService
                     SourceType = "Purchase",
                     SourceOrderId = newId,
                     SourceDetailId = detail.Id,
-                    Direction = "In",     // ⚠️ 明確賦值，絕不可漏！沒有 DEFAULT
+                    Direction = "In",
                     Quantity = detail.Quantity,
                     UnitPrice = detail.UnitPrice,
                     CreatedBy = createdBy,
@@ -124,7 +120,6 @@ public class PurchaseService : IPurchaseService
             return ServiceResult<PurchaseOrderDto>.Fail($"進貨失敗：{ex.Message}");
         }
     }
-
     // ── Phase 5.5 Day43-44：作廢進貨單（反向沖銷）──
     public async Task<ServiceResult<PurchaseOrderDto>> VoidAsync(
         int id, string reason, string voidedBy)
@@ -139,23 +134,6 @@ public class PurchaseService : IPurchaseService
         using var tx = await _ctx.Database.BeginTransactionAsync();
         try
         {
-            // ── 第一階段：先驗證每個商品扣回後不會變負庫存 ──
-            foreach (var detail in order.Details)
-            {
-                var product = await _productRepo.GetByIdAsync(detail.ProductId);
-                if (product == null) continue;   // 商品已不存在屬資料異常，極少見，略過不擋
-
-                var newStock = product.Stock - detail.Quantity;
-                if (newStock < 0)
-                {
-                    await tx.RollbackAsync();
-                    return ServiceResult<PurchaseOrderDto>.Fail(
-                        $"「{product.Name}」庫存不足以作廢（現有 {product.Stock}，需扣回 {detail.Quantity}），" +
-                        $"可能已被後續銷貨使用，請先確認銷貨明細");
-                }
-            }
-
-            // ── 第二階段：驗證全過，才真正異動 ──
             order.Status = "Voided";
             order.VoidedAt = DateTime.UtcNow;
             order.VoidedBy = voidedBy;
@@ -165,19 +143,24 @@ public class PurchaseService : IPurchaseService
             var ledgers = new List<InventoryLedger>();
             foreach (var detail in order.Details)
             {
-                var product = await _productRepo.GetByIdAsync(detail.ProductId);
-                if (product == null) continue;
-
-                await _productRepo.UpdateStockAsync(
-                    detail.ProductId, product.Stock - detail.Quantity);
+                // ✅ 作廢進貨 = 扣回庫存，可能不足（例如已被後續銷貨用掉），用原子扣減防護
+                var success = await _productRepo.TryDecreaseStockAsync(detail.ProductId, detail.Quantity);
+                if (!success)
+                {
+                    await tx.RollbackAsync();
+                    var product = await _productRepo.GetByIdAsync(detail.ProductId);
+                    return ServiceResult<PurchaseOrderDto>.Fail(
+                        $"「{product?.Name}」庫存不足以作廢（現有 {product?.Stock}，需扣回 {detail.Quantity}），" +
+                        $"可能已被後續銷貨使用，請先確認銷貨明細");
+                }
 
                 ledgers.Add(new InventoryLedger
                 {
                     ProductId = detail.ProductId,
                     SourceType = "PurchaseVoid",
-                    SourceOrderId = order.Id,         // 指回原進貨單，方便追蹤
+                    SourceOrderId = order.Id,
                     SourceDetailId = detail.Id,
-                    Direction = "Out",            // ⚠️ 反向：原本 In，作廢變 Out
+                    Direction = "Out",
                     Quantity = detail.Quantity,
                     UnitPrice = detail.UnitPrice,
                     CreatedBy = voidedBy,
@@ -195,7 +178,6 @@ public class PurchaseService : IPurchaseService
             return ServiceResult<PurchaseOrderDto>.Fail($"作廢失敗：{ex.Message}");
         }
     }
-
     private static PurchaseOrderDto ToDto(PurchaseOrder o) => new()
     {
         Id = o.Id,

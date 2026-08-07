@@ -94,4 +94,24 @@ public class EFProductRepository : IProductRepository
         return true;
     }
 
+    // ── 相對增減庫存：用 SQL 算術運算，避免讀取-計算-寫入之間的競態條件 ──
+    public async Task AdjustStockAsync(int productId, int delta)
+    {
+        await _ctx.Products
+            .Where(p => p.Id == productId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(p => p.Stock, p => p.Stock + delta));
+    }
+    // ── 原子扣減庫存：WHERE 條件內含「庫存足夠」的檢查，跟扣減動作在同一句 SQL 完成 ──
+    // 回傳 true：扣減成功（代表當下庫存確實足夠）
+    // 回傳 false：扣減失敗（代表當下庫存不足，可能被其他請求搶先扣走）
+    public async Task<bool> TryDecreaseStockAsync(int productId, int quantity)
+    {
+        var affected = await _ctx.Products
+            .Where(p => p.Id == productId && p.Stock >= quantity)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(p => p.Stock, p => p.Stock - quantity));
+
+        return affected > 0;   // 0 筆被影響 = 條件不成立 = 庫存不夠
+    }
 }

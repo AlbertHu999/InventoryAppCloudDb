@@ -53,7 +53,7 @@ public class SalesService : ISalesService
                 return ServiceResult<SalesOrderDto>.Fail("銷貨單價不能為負數");
         }
 
-        // ✅✅✅ 核心修正：依 ProductId 彙總整張單的需求量，不是逐筆檢查 ✅✅✅
+        // 依 ProductId 彙總整張單的需求量，不是逐筆檢查
         var requiredByProduct = dto.Details
             .GroupBy(d => d.ProductId)
             .Select(g => new { ProductId = g.Key, TotalQuantity = g.Sum(x => x.Quantity) })
@@ -62,7 +62,7 @@ public class SalesService : ISalesService
         using var tx = await _ctx.Database.BeginTransactionAsync();
         try
         {
-            // ── 驗證階段：先把彙總後的需求量全部驗證過，一張都不放過才繼續 ──
+            // ── 第一階段：確認商品存在、且啟用中（這裡不涉及數量競態，一般讀取即可）──
             foreach (var req in requiredByProduct)
             {
                 var product = await _productRepo.GetByIdAsync(req.ProductId);
@@ -78,15 +78,23 @@ public class SalesService : ISalesService
                     return ServiceResult<SalesOrderDto>.Fail(
                         $"「{product.Name}」已停用，無法銷貨");
                 }
-                if (product.Stock < req.TotalQuantity)
+            }
+
+            // ── ✅ 第二階段：原子扣減庫存，資料庫層級保證絕不會扣成負數 ──
+            foreach (var req in requiredByProduct)
+            {
+                var success = await _productRepo.TryDecreaseStockAsync(req.ProductId, req.TotalQuantity);
+                if (!success)
                 {
                     await tx.RollbackAsync();
+                    var product = await _productRepo.GetByIdAsync(req.ProductId);
                     return ServiceResult<SalesOrderDto>.Fail(
-                        $"「{product.Name}」庫存不足（現有 {product.Stock}，整張單共需 {req.TotalQuantity}）");
+                        $"「{product?.Name}」庫存不足（現有 {product?.Stock}，整張單共需 {req.TotalQuantity}），" +
+                        $"可能剛被其他人異動，請重新整理後再試");
                 }
             }
 
-            // ── 驗證全部通過，才開始真正建立單據與異動庫存 ──
+            // ── 扣減全部成功，才真正建立單據 ──
             var order = new SalesOrder
             {
                 Customer = dto.Customer.Trim(),
@@ -110,17 +118,13 @@ public class SalesService : ISalesService
             var ledgers = new List<InventoryLedger>();
             foreach (var detail in order.Details)
             {
-                var product = await _productRepo.GetByIdAsync(detail.ProductId);
-                await _productRepo.UpdateStockAsync(
-                    detail.ProductId, product!.Stock - detail.Quantity);
-
                 ledgers.Add(new InventoryLedger
                 {
                     ProductId = detail.ProductId,
                     SourceType = "Sales",
                     SourceOrderId = newId,
                     SourceDetailId = detail.Id,
-                    Direction = "Out",    // ⚠️ 明確賦值，絕不可漏！
+                    Direction = "Out",
                     Quantity = detail.Quantity,
                     UnitPrice = detail.UnitPrice,
                     CreatedBy = createdBy,
@@ -137,7 +141,6 @@ public class SalesService : ISalesService
             return ServiceResult<SalesOrderDto>.Fail($"銷貨失敗：{ex.Message}");
         }
     }
-
     // ── Phase 5.5 Day43-44：作廢銷貨單（反向沖銷，加回庫存）──
     public async Task<ServiceResult<SalesOrderDto>> VoidAsync(
         int id, string reason, string voidedBy)
@@ -152,7 +155,6 @@ public class SalesService : ISalesService
         using var tx = await _ctx.Database.BeginTransactionAsync();
         try
         {
-            // 銷貨作廢 = 加回庫存，沒有變負數的風險，不需要第一階段驗證
             order.Status = "Voided";
             order.VoidedAt = DateTime.UtcNow;
             order.VoidedBy = voidedBy;
@@ -162,11 +164,8 @@ public class SalesService : ISalesService
             var ledgers = new List<InventoryLedger>();
             foreach (var detail in order.Details)
             {
-                var product = await _productRepo.GetByIdAsync(detail.ProductId);
-                if (product == null) continue;
-
-                await _productRepo.UpdateStockAsync(
-                    detail.ProductId, product.Stock + detail.Quantity);
+                // ✅ 加回庫存，永遠安全（正數增加），改用原子操作避免競態
+                await _productRepo.AdjustStockAsync(detail.ProductId, detail.Quantity);
 
                 ledgers.Add(new InventoryLedger
                 {
@@ -174,7 +173,7 @@ public class SalesService : ISalesService
                     SourceType = "SalesVoid",
                     SourceOrderId = order.Id,
                     SourceDetailId = detail.Id,
-                    Direction = "In",             // ⚠️ 反向：原本 Out，作廢變 In
+                    Direction = "In",
                     Quantity = detail.Quantity,
                     UnitPrice = detail.UnitPrice,
                     CreatedBy = voidedBy,
