@@ -385,15 +385,21 @@ app.MapPost("/api/auth/login", async (LoginDto dto, IAuthService svc, ILogger<Pr
 .WithTags("驗證");
 
 // POST /api/auth/logout — 登出（撤銷 Token，Phase 5.5）
-app.MapPost("/api/auth/logout", async (HttpContext ctx, IAuthService svc) =>
+app.MapPost("/api/auth/logout", async (
+    HttpContext ctx, IAuthService svc, ILogger<Program> logger) =>
 {
     var authHeader = ctx.Request.Headers["Authorization"].FirstOrDefault();
     var token = authHeader?.StartsWith("Bearer ") == true
         ? authHeader["Bearer ".Length..].Trim()
         : "";
+
+    var username = ctx.Items["Username"]?.ToString() ?? "未知使用者";
+
     var result = await svc.LogoutAsync(token);
+
+    logger.LogInformation("登出成功 使用者={Username}", username);
+
     return Results.Ok(result);
 })
 .WithTags("驗證");
-
 app.Run();

@@ -56,11 +56,21 @@ public partial class MainForm : Form
     }
 
     // ── 登出 ─────────────────────────────────────────
-    private void MnuLogout_Click(object? sender, EventArgs e)
+    // ── 登出 ─────────────────────────────────────────
+    private async void MnuLogout_Click(object? sender, EventArgs e)
     {
         var confirm = MessageBox.Show("確定要登出嗎？", "登出確認",
             MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         if (confirm != DialogResult.Yes) return;
+
+        try
+        {
+            await _api.LogoutAsync(AppSession.Token);   // ✅ 新增：真正通知伺服器撤銷 Token
+        }
+        catch
+        {
+            // 撤銷失敗不應該卡住登出流程，頂多這個舊 Token 要等自然過期
+        }
 
         AppSession.Clear();
         var loginForm = new LoginForm(_api);
